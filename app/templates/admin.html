@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Panel general{% endblock %}
+{% block extra_head %}
+<style>
+.unidad-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow)}
+.unidad-name{font-size:16px;font-weight:700;color:var(--navy)}
+.unidad-asesor{font-size:13px;color:var(--text-muted);margin-top:2px}
+.inf-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border-lt)}
+.inf-row:last-child{border-bottom:none}
+</style>
+{% endblock %}
+{% block content %}
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:20px">
+<div class="page-header" style="margin:0">
+  <div class="eyebrow">Presidencia de estaca</div>
+  <h1>Panel general</h1>
+  <div class="subtitle">{{ now.strftime('%B %Y') }}</div>
+</div>
+
+<!-- UNIDADES -->
+</div>
+<a href="{{ url_for('admin_consolidado') }}" class="btn btn-gold" style="flex-shrink:0">📊 Informe consolidado</a>
+</div>
+
+<div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px">Estado por unidad</div>
+{% for u in unidades %}
+<div class="unidad-card">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+    <div>
+      <div class="unidad-name">{{ u.nombre }}</div>
+      <div class="unidad-asesor">{{ u.asesor or 'Sin asesor asignado' }}</div>
+    </div>
+    {% if u.hojas_enviadas > 0 %}
+    <span class="badge badge-ok">{{ u.hojas_enviadas }} enviadas</span>
+    {% else %}
+    <span class="badge badge-none">Sin informes</span>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+
+<!-- INFORMES RECIENTES -->
+<div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin:20px 0 10px">Informes recientes</div>
+<div class="card">
+  <div class="card-body" style="padding:0 16px">
+  {% if recientes %}
+    {% for item in recientes %}
+    {% set inf = item.inf %}
+    <div class="inf-row">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:15px;font-weight:600;color:var(--navy)">{{ inf.unidad }}</div>
+        <div style="font-size:12px;color:var(--text-muted)">{{ inf.asesor }} · {{ meses[inf.periodo_mes] }} {{ inf.periodo_anio }}</div>
+        <div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap">
+          {% for hoja in [item.hojas.cuorum, item.hojas.ministracion, item.hojas.misional, item.hojas.templo, item.hojas.general] %}
+          {% if not hoja %}<span style="width:8px;height:8px;border-radius:50%;background:var(--border);display:inline-block"></span>
+          {% elif hoja.estado=='revisado' %}<span style="width:8px;height:8px;border-radius:50%;background:var(--navy);display:inline-block"></span>
+          {% elif hoja.estado=='enviado' %}<span style="width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block"></span>
+          {% else %}<span style="width:8px;height:8px;border-radius:50%;background:var(--warn);display:inline-block"></span>{% endif %}
+          {% endfor %}
+          <span style="font-size:11px;color:var(--text-muted);margin-left:4px">{{ item.enviadas }}/5</span>
+        </div>
+      </div>
+      <a href="{{ url_for('admin_ver_informe', inf_id=inf.id) }}" class="btn btn-outline btn-sm" style="flex-shrink:0">Ver</a>
+    </div>
+    {% endfor %}
+  {% else %}
+  <div style="padding:32px;text-align:center;color:var(--text-muted)">No hay informes aún.</div>
+  {% endif %}
+  </div>
+</div>
+{% endblock %}

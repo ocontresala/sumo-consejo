@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+{% block title %}Consolidado {{ meses[mes] }} {{ anio }}{% endblock %}
+{% block extra_head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+.sel-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;align-items:flex-end}
+.sel-bar select{flex:1;min-width:100px}
+.sec-title{font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin:24px 0 12px;display:flex;align-items:center;gap:10px}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.chart-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.chart-title{font-size:13px;font-weight:600;color:var(--navy);margin-bottom:12px}
+canvas{max-height:220px}
+
+/* SEMÁFORO HORIZONTAL */
+.sema-grid{background:var(--white);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px;box-shadow:var(--shadow)}
+.sema-grid-header{display:grid;padding:8px 12px;background:var(--navy);font-size:11px;font-weight:600;color:rgba(255,255,255,.7);letter-spacing:1px;text-transform:uppercase}
+.sema-grid-row{display:grid;padding:10px 12px;border-top:1px solid var(--border-lt);align-items:center;gap:6px}
+.sema-grid-row:nth-child(even){background:var(--bg)}
+.sema-label-cell{font-size:13px;color:var(--text-soft);line-height:1.3}
+.sema-dot{width:18px;height:18px;border-radius:50%;flex-shrink:0;margin:0 auto}
+.sema-dot.bien{background:var(--ok)}
+.sema-dot.proceso{background:var(--warn)}
+.sema-dot.atencion{background:var(--danger)}
+.sema-dot.vacio{background:var(--border)}
+
+/* CHECKLIST GRID */
+.check-grid{background:var(--white);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px;box-shadow:var(--shadow)}
+.check-grid table{width:100%;border-collapse:collapse;font-size:12px}
+.check-grid th{padding:8px 10px;background:var(--navy);color:rgba(255,255,255,.8);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;text-align:center;border-right:1px solid rgba(255,255,255,.1)}
+.check-grid th.label-col{text-align:left;width:42%}
+.check-grid td{padding:9px 10px;border-top:1px solid var(--border-lt);text-align:center;border-right:1px solid var(--border-lt)}
+.check-grid td.label-col{text-align:left;font-size:12px;color:var(--text-soft);line-height:1.3}
+.check-grid tr:nth-child(even) td{background:var(--bg)}
+.ci{font-size:14px}
+
+/* OBS GRID */
+.obs-grid{background:var(--white);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px;box-shadow:var(--shadow)}
+.obs-grid table{width:100%;border-collapse:collapse;font-size:12px}
+.obs-grid th{padding:8px 10px;background:var(--navy);color:rgba(255,255,255,.8);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;text-align:left;border-right:1px solid rgba(255,255,255,.1)}
+.obs-grid td{padding:9px 10px;border-top:1px solid var(--border-lt);border-right:1px solid var(--border-lt);font-size:12px;color:var(--text-soft);vertical-align:top;line-height:1.4;min-width:120px}
+.obs-grid tr:nth-child(even) td{background:var(--bg)}
+.obs-grid td.barrio-col{font-weight:600;color:var(--navy);white-space:nowrap}
+.empty-obs{color:var(--border);font-style:italic}
+
+/* HOJA TABS */
+.hoja-tabs{display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;margin-bottom:20px;scrollbar-width:none}
+.hoja-tabs::-webkit-scrollbar{display:none}
+.htab{flex-shrink:0;padding:8px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--white);font-size:12px;font-weight:600;color:var(--text-muted);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.htab.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.hoja-section{display:none}
+.hoja-section.active{display:block}
+
+/* COBERTURA BADGE */
+.cov-badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700}
+.cov-full{background:#EAF5EA;color:#2E7D32}
+.cov-partial{background:#FFF8E1;color:#E65100}
+.cov-none{background:#FDECEC;color:#C62828}
+
+@media(min-width:640px){
+  canvas{max-height:260px}
+  .sema-grid-header,.sema-grid-row{grid-template-columns:2fr repeat(5,1fr)}
+  .sel-bar select{flex:0 0 140px}
+}
+@media(max-width:639px){
+  .sema-grid-header,.sema-grid-row{grid-template-columns:1.8fr repeat(5,.8fr)}
+  .obs-grid{overflow-x:auto}
+  .obs-grid table{min-width:480px}
+  .check-grid{overflow-x:auto}
+  .check-grid table{min-width:480px}
+}
+</style>
+{% endblock %}
+{% block content %}
+
+<!-- HEADER -->
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+  <a href="{{ url_for('admin_dashboard') }}" style="width:36px;height:36px;border-radius:8px;background:var(--white);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:18px;flex-shrink:0;text-decoration:none">‹</a>
+  <div>
+    <div style="font-size:12px;color:var(--text-muted)">Presidencia de estaca</div>
+    <div style="font-size:18px;font-weight:700;color:var(--navy)">Consolidado de estaca</div>
+  </div>
+</div>
+
+<!-- SELECTOR DE PERÍODO -->
+<form method="GET" class="sel-bar">
+  <div class="form-group" style="margin:0;flex:1">
+    <label>Mes</label>
+    <select name="mes">
+      {% for i in range(1,13) %}
+      <option value="{{ i }}" {% if i==mes %}selected{% endif %}>{{ meses[i] }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="form-group" style="margin:0;flex:1">
+    <label>Año</label>
+    <select name="anio">
+      {% for y in range(now.year, now.year-3, -1) %}
+      <option value="{{ y }}" {% if y==anio %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="btn btn-primary" style="flex:0 0 auto">Ver</button>
+</form>
+
+<!-- COBERTURA -->
+<div style="background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:20px;box-shadow:var(--shadow)">
+  <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Cobertura de informes — {{ meses[mes] }} {{ anio }}</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px">
+    {% for u in unidades %}
+    {% set total = data[u.id].hojas_enviadas if u.id in data else 0 %}
+    <div style="padding:10px;border:1px solid var(--border);border-radius:8px;text-align:center">
+      <div style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:4px">{{ u.nombre }}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">{{ u.asesor or '—' }}</div>
+      {% if total == 5 %}<span class="cov-badge cov-full">5/5 ✓</span>
+      {% elif total > 0 %}<span class="cov-badge cov-partial">{{ total }}/5</span>
+      {% else %}<span class="cov-badge cov-none">Sin informes</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- TABS DE HOJAS -->
+<div class="hoja-tabs">
+  <div class="htab active" onclick="showHojaConsolidado('h1',this)">1. Cuórum</div>
+  <div class="htab" onclick="showHojaConsolidado('h2',this)">2. Ministración</div>
+  <div class="htab" onclick="showHojaConsolidado('h3',this)">3. Misional</div>
+  <div class="htab" onclick="showHojaConsolidado('h4',this)">4. Templo</div>
+  <div class="htab" onclick="showHojaConsolidado('h5',this)">5. General</div>
+</div>
+
+{% set barrios = unidades | map(attribute='nombre') | list %}
+{% set colors = ['rgba(26,58,92,.8)','rgba(61,94,56,.8)','rgba(122,48,32,.8)','rgba(107,79,24,.8)','rgba(67,36,104,.8)'] %}
+{% set colors_lt = ['rgba(26,58,92,.15)','rgba(61,94,56,.15)','rgba(122,48,32,.15)','rgba(107,79,24,.15)','rgba(67,36,104,.15)'] %}
+
+{% macro bar_chart(chart_id, label, fields) %}
+<div class="chart-wrap">
+  <div class="chart-title">{{ label }}</div>
+  <canvas id="{{ chart_id }}"></canvas>
+</div>
+<script>
+(function(){
+  const labels = {{ barrios | tojson }};
+  const datasets = {{ fields | tojson }}.map(function(f, fi) {
+    return {
+      label: f.label,
+      data: {{ unidades | map(attribute='id') | list | tojson }}.map(function(uid) {
+        const d = {{ data | tojson }};
+        if(!d[uid] || !d[uid][f.key]) return 0;
+        return d[uid][f.key][f.field] || 0;
+      }),
+      backgroundColor: {{ colors | tojson }}[fi % 5],
+      borderRadius: 6,
+    };
+  });
+  new Chart(document.getElementById('{{ chart_id }}'), {
+    type: 'bar',
+    data: { labels: labels, datasets: datasets },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { font: { size: 10 } } },
+        y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } } }
+      }
+    }
+  });
+})();
+</script>
+{% endmacro %}
+
+{% macro sema_table(titulo, campo_key, aspectos) %}
+<div class="sema-grid">
+  <div class="sema-grid-header">
+    <div>{{ titulo }}</div>
+    {% for u in unidades %}<div style="text-align:center;font-size:10px">{{ u.nombre | truncate(8, true, '') }}</div>{% endfor %}
+  </div>
+  {% for campo, label in aspectos %}
+  <div class="sema-grid-row">
+    <div class="sema-label-cell">{{ label }}</div>
+    {% for u in unidades %}
+    {% set val = data[u.id][campo_key][campo] if u.id in data and campo_key in data[u.id] and data[u.id][campo_key] else None %}
+    <div style="display:flex;justify-content:center">
+      <div class="sema-dot {{ val if val else 'vacio' }}"></div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{% macro check_table(titulo, campo_key, campo_arr, items) %}
+<div class="check-grid">
+  <table>
+    <thead>
+      <tr>
+        <th class="label-col">{{ titulo }}</th>
+        {% for u in unidades %}<th>{{ u.nombre | truncate(8, true, '') }}</th>{% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for val, label in items %}
+      <tr>
+        <td class="label-col">{{ label }}</td>
+        {% for u in unidades %}
+        {% set arr_raw = data[u.id][campo_key][campo_arr] if u.id in data and campo_key in data[u.id] and data[u.id][campo_key] else '[]' %}
+        {% set arr = arr_raw | from_json %}
+        <td><span class="ci">{% if val in arr %}✅{% else %}⬜{% endif %}</span></td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endmacro %}
+
+{% macro obs_table(campos) %}
+<div class="obs-grid">
+  <table>
+    <thead>
+      <tr>
+        <th class="barrio-col" style="min-width:100px">Barrio / Asesor</th>
+        {% for campo_key, campo, label in campos %}<th>{{ label }}</th>{% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in unidades %}
+      <tr>
+        <td class="barrio-col">{{ u.nombre }}<br><span style="font-weight:400;font-size:11px;color:var(--text-muted)">{{ u.asesor or '—' }}</span></td>
+        {% for campo_key, campo, _ in campos %}
+        {% set val = data[u.id][campo_key][campo] if u.id in data and campo_key in data[u.id] and data[u.id][campo_key] else None %}
+        <td>{% if val %}<span>{{ val }}</span>{% else %}<span class="empty-obs">—</span>{% endif %}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endmacro %}
+
+<!-- ══ HOJA 1: CUÓRUM ══ -->
+<div id="h1" class="hoja-section active">
+  <div class="sec-title">Indicadores numéricos</div>
+  {{ bar_chart('chart_cuorum', 'Cuórum de élderes',
+    [{'key':'cuorum','field':'reuniones_presidencia','label':'Reun. presidencia'},
+     {'key':'cuorum','field':'reuniones_correlacion','label':'Reun. correlación'},
+     {'key':'cuorum','field':'sesiones_asistidas','label':'Sesiones asistidas'},
+     {'key':'cuorum','field':'elderes_preparacion','label':'Élderes preparación'}]) }}
+
+  <div class="sec-title">Estado de la presidencia</div>
+  {{ sema_table('Aspecto', 'cuorum', [
+    ('est_presidencia_completa','Presidencia completa y activa'),
+    ('est_conoce_responsabilidades','Conoce sus responsabilidades'),
+    ('est_reuniones_regulares','Reuniones regulares del cuórum'),
+    ('est_transmite_informacion','Transmite información de presidencia'),
+  ]) }}
+
+  <div class="sec-title">Temas enseñados</div>
+  {{ check_table('Tema', 'cuorum', 'temas_ensenados', [
+    ('resp_presidencia','Responsabilidades (caps. 1–4 y 8)'),
+    ('obra_misional','Obra misional y Soc. de Socorro'),
+    ('templo_hf','Templo e historia familiar'),
+    ('ministracion','Ministración (cap. 21)'),
+    ('llamamientos','Llamamientos y ordenaciones'),
+    ('info_presidencia','Información de presidencia de estaca'),
+  ]) }}
+
+  <div class="sec-title">Observaciones</div>
+  {% set obs_campos = [('cuorum','necesidades','Necesidades'),('cuorum','miembros_atencion','Miembros con atención'),('cuorum','acciones_propuestas','Acciones propuestas')] %}
+  {{ obs_table(obs_campos) }}
+</div>
+
+<!-- ══ HOJA 2: MINISTRACIÓN ══ -->
+<div id="h2" class="hoja-section">
+  <div class="sec-title">Indicadores numéricos</div>
+  {{ bar_chart('chart_ministracion', 'Ministración',
+    [{'key':'ministracion','field':'hermanos_activos','label':'Hnos. ministrantes'},
+     {'key':'ministracion','field':'entrevistas_realizadas','label':'Entrevistas'},
+     {'key':'ministracion','field':'familias_sin_asignacion','label':'Sin asignación'},
+     {'key':'ministracion','field':'asignaciones_revisadas','label':'Asign. revisadas'}]) }}
+
+  <div class="sec-title">Evaluación</div>
+  {{ sema_table('Aspecto', 'ministracion', [
+    ('est_cobertura_total','Cobertura total de ministerio'),
+    ('est_entrevistas','Entrevistas trimestrales realizadas'),
+    ('est_coord_soc_socorro','Coord. con Sociedad de Socorro'),
+    ('est_contacto_regular','Contacto regular con familias'),
+  ]) }}
+
+  <div class="sec-title">Actividades realizadas</div>
+  {{ check_table('Actividad', 'ministracion', 'actividades', [
+    ('revision_asig','Revisión de asignaciones con presidencia'),
+    ('coord_soc','Coord. con Soc. de Socorro'),
+    ('acompane','Acompañó a presidencia a ministrar'),
+    ('inactivos','Identificó miembros en riesgo'),
+  ]) }}
+
+  <div class="sec-title">Observaciones</div>
+  {{ obs_table([('ministracion','situaciones','Situaciones'),('ministracion','coord_soc_socorro','Coord. Soc. Socorro'),('ministracion','plan_accion','Plan de acción')]) }}
+</div>
+
+<!-- ══ HOJA 3: MISIONAL ══ -->
+<div id="h3" class="hoja-section">
+  <div class="sec-title">Indicadores numéricos</div>
+  {{ bar_chart('chart_misional', 'Obra misional',
+    [{'key':'misional','field':'bautismos','label':'Bautismos'},
+     {'key':'misional','field':'nuevos_miembros_activos','label':'Nuevos miembros activos'},
+     {'key':'misional','field':'misioneros_tiempo_completo','label':'Misioneros TC'},
+     {'key':'misional','field':'misioneros_relevados','label':'Relevados'}]) }}
+
+  <div class="sec-title">Estado de la obra misional</div>
+  {{ sema_table('Aspecto', 'misional', [
+    ('est_pdte_conoce_resp','Presidencia conoce resp. misional'),
+    ('est_coord_lider_misional','Coord. con líder misional'),
+    ('est_nuevos_miembros','Nuevos miembros fortalecidos'),
+    ('est_miembros_regresan','Miembros que regresan atendidos'),
+  ]) }}
+
+  <div class="sec-title">Actividades realizadas</div>
+  {{ check_table('Actividad', 'misional', 'actividades', [
+    ('instruir_resp','Instruyó sobre resp. misionales'),
+    ('lider_misional','Se reunió con líder misional'),
+    ('joven_mision','Apoyó joven preparándose'),
+    ('integracion','Apoyó integración de nuevos'),
+    ('pathway','Referí a EnglishConnect/Pathway'),
+  ]) }}
+
+  <div class="sec-title">Observaciones</div>
+  {{ obs_table([('misional','situacion_general','Situación general'),('misional','miembros_atencion','Miembros con atención'),('misional','comentarios','Comentarios')]) }}
+</div>
+
+<!-- ══ HOJA 4: TEMPLO ══ -->
+<div id="h4" class="hoja-section">
+  <div class="sec-title">Indicadores numéricos</div>
+  {{ bar_chart('chart_templo', 'Templo e historia familiar',
+    [{'key':'templo','field':'miembros_recomendacion','label':'Con recomendación'},
+     {'key':'templo','field':'jovenes_recomendacion','label':'Jóvenes con rec.'},
+     {'key':'templo','field':'miembros_preparandose','label':'Preparándose'},
+     {'key':'templo','field':'visitas_coordinadas','label':'Visitas coord.'}]) }}
+
+  <div class="sec-title">Evaluación</div>
+  {{ sema_table('Aspecto', 'templo', [
+    ('est_pdte_conoce_resp','Presidencia conoce responsabilidades'),
+    ('est_lider_thf','Líder TH&F activo y coordinado'),
+    ('est_siguiente_ordenanza','Siguiente ordenanza en proceso'),
+    ('est_activos_hf','Activos en historia familiar'),
+  ]) }}
+
+  <div class="sec-title">Actividades realizadas</div>
+  {{ check_table('Actividad', 'templo', 'actividades', [
+    ('instruir','Instruyó sobre templo e hª familiar'),
+    ('lcr','Revisó LCR sin siguiente ordenanza'),
+    ('lider_thf','Apoyó al líder TH&F del barrio'),
+    ('consultores','Coord. con consultores de estaca'),
+    ('animar_templo','Animó a adorar en el templo'),
+  ]) }}
+
+  <div class="sec-title">Observaciones</div>
+  {{ obs_table([('templo','estado_obra','Estado de la obra'),('templo','miembros_apoyo','Miembros para apoyo'),('templo','necesidades','Necesidades')]) }}
+</div>
+
+<!-- ══ HOJA 5: GENERAL ══ -->
+<div id="h5" class="hoja-section">
+  <div class="sec-title">Evaluación general del barrio</div>
+  {{ sema_table('Aspecto', 'general', [
+    ('est_vitalidad','Vitalidad general del barrio'),
+    ('est_obispado','Relación con el obispado'),
+    ('est_ordenanzas','Progreso en ordenanzas del templo'),
+    ('est_misional','Participación en obra misional'),
+    ('est_templo','Participación en templo e hª familiar'),
+    ('est_ministracion','Cobertura de ministración'),
+  ]) }}
+
+  <div class="sec-title">Actividades con el obispado</div>
+  {{ check_table('Actividad', 'general', 'actividades_obispado', [
+    ('reunion_obispado','Asistió a reunión del obispado'),
+    ('reunion_obispo','Se reunió con el obispo'),
+    ('llamamientos','Extendió llamamientos/apartó'),
+    ('ordenacion','Representó en ordenación'),
+  ]) }}
+
+  <div class="sec-title">Observaciones consolidadas</div>
+  {{ obs_table([('general','fortalezas','Fortalezas'),('general','desafios','Desafíos'),('general','solicitudes','Solicitudes a presidencia')]) }}
+</div>
+
+<script>
+function showHojaConsolidado(id, btn) {
+  document.querySelectorAll('.hoja-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.htab').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  btn.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+}
+</script>
+{% endblock %}

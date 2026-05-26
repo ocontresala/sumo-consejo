@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+{% block title %}{{ inf.unidad }} — {{ meses[inf.periodo_mes] }} {{ inf.periodo_anio }}{% endblock %}
+{% block extra_head %}
+<style>
+.check-view{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border:1px solid var(--border-lt);border-radius:var(--r);margin-bottom:7px;font-size:13px;color:var(--text-soft)}
+.check-view.marcado{background:#ECF5EC;border-color:#90C890;color:var(--text)}
+.check-view .cbox-v{width:20px;height:20px;border-radius:5px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;color:transparent}
+.check-view.marcado .cbox-v{background:var(--ok);border-color:var(--ok);color:#fff}
+</style>
+{% endblock %}
+{% block content %}
+
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+  <a href="{{ url_for('admin_dashboard') }}" style="width:36px;height:36px;border-radius:8px;background:var(--white);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:18px;flex-shrink:0;text-decoration:none">‹</a>
+  <div style="flex:1">
+    <div style="font-size:12px;color:var(--text-muted)">{{ inf.asesor }}</div>
+    <div style="font-size:18px;font-weight:700;color:var(--navy)">{{ inf.unidad }} · {{ meses[inf.periodo_mes] }} {{ inf.periodo_anio }}</div>
+  </div>
+  <form method="POST" action="{{ url_for('admin_resetear_informe', inf_id=inf.id) }}"
+    onsubmit="return confirm('¿Eliminar TODAS las hojas de este informe? El asesor deberá diligenciar todo de nuevo.')">
+    <button type="submit" class="btn btn-sm" style="background:#FFF0F0;border:1.5px solid var(--danger);color:var(--danger);font-size:12px;flex-shrink:0">
+      🗑 Resetear todo
+    </button>
+  </form>
+</div>
+
+{% macro estado_dot(val) %}
+<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:{% if val=='bien' %}var(--ok){% elif val=='atencion' %}var(--danger){% else %}var(--warn){% endif %};vertical-align:middle;margin-right:6px"></span><span style="font-size:13px;color:var(--text-soft)">{% if val=='bien' %}Bien{% elif val=='atencion' %}Atención{% else %}En proceso{% endif %}</span>
+{% endmacro %}
+
+{% macro sema_view(label, val) %}
+<div class="sema-row" style="margin-bottom:8px">
+  <span class="sema-label">{{ label }}</span>
+  {{ estado_dot(val or 'proceso') }}
+</div>
+{% endmacro %}
+
+{% macro check_view(txt, marcado) %}
+<div class="check-view {% if marcado %}marcado{% endif %}">
+  <div class="cbox-v">✓</div>
+  <span>{{ txt }}</span>
+</div>
+{% endmacro %}
+
+{% macro obs_field(label, val) %}
+{% if val %}
+<div class="form-group">
+  <label>{{ label }}</label>
+  <textarea disabled style="font-size:13px;color:var(--text)">{{ val }}</textarea>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro observacion_form(hoja_key, hoja) %}
+<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-lt)">
+  {% if hoja and hoja.estado in ['enviado','revisado'] %}
+  <form method="POST" action="{{ url_for('admin_observacion', inf_id=inf.id, hoja_key=hoja_key) }}">
+    <div class="form-group">
+      <label>Observación de la presidencia</label>
+      <textarea name="observacion" placeholder="Escribe tu retroalimentación para el asesor…">{{ hoja.observacion_presidencia or '' }}</textarea>
+    </div>
+    <button type="submit" class="btn btn-primary btn-block">Guardar y marcar como revisada</button>
+  </form>
+  {% endif %}
+  {% if hoja %}
+  <form method="POST" action="{{ url_for('admin_resetear_hoja', inf_id=inf.id, hoja_key=hoja_key) }}"
+    onsubmit="return confirm('¿Eliminar esta hoja para que el asesor pueda volver a diligenciarla?')"
+    style="margin-top:10px">
+    <button type="submit" class="btn btn-block" style="background:#FFF0F0;border:1.5px solid var(--danger);color:var(--danger);font-size:13px">
+      🗑 Eliminar hoja y habilitar para rediligenciar
+    </button>
+  </form>
+  {% endif %}
+</div>
+{% endmacro %}
+
+<!-- ══ HOJA 1: CUÓRUM ══ -->
+<div class="card accent-navy" style="margin-bottom:14px">
+  <div class="card-header" style="background:var(--navy-lt)">
+    <strong style="color:var(--navy)">Hoja 1 — Cuórum de élderes</strong>
+    <span style="margin-left:auto">
+      {% set h = hojas.cuorum %}
+      {% if not h %}<span class="badge badge-none">Sin completar</span>
+      {% elif h.estado=='enviado' %}<span class="badge badge-ok">✓ Enviada</span>
+      {% elif h.estado=='revisado' %}<span class="badge badge-rev">Revisada</span>
+      {% else %}<span class="badge badge-draft">Borrador</span>{% endif %}
+    </span>
+  </div>
+  {% if hojas.cuorum %}{% set h = hojas.cuorum %}
+  <div class="card-body">
+    <div class="div-label">A. Indicadores</div>
+    <div class="metrics">
+      <div class="metric"><label>Reun. presidencia</label><input disabled value="{{ h.reuniones_presidencia }}"></div>
+      <div class="metric"><label>Reun. correlación</label><input disabled value="{{ h.reuniones_correlacion }}"></div>
+      <div class="metric"><label>Sesiones asistidas</label><input disabled value="{{ h.sesiones_asistidas }}"></div>
+      <div class="metric"><label>Élderes preparación</label><input disabled value="{{ h.elderes_preparacion }}"></div>
+    </div>
+
+    <div class="div-label">B. Estado de la presidencia</div>
+    {{ sema_view('Presidencia llamada, completa y activa', h.est_presidencia_completa) }}
+    {{ sema_view('Conoce sus responsabilidades (caps. 1–4 y 8)', h.est_conoce_responsabilidades) }}
+    {{ sema_view('Las reuniones del cuórum se realizan con regularidad', h.est_reuniones_regulares) }}
+    {{ sema_view('Transmite información de la presidencia de estaca', h.est_transmite_informacion) }}
+
+    <div class="div-label">C. Temas enseñados a la presidencia</div>
+    {% set temas = h.temas_ensenados | from_json %}
+    {{ check_view('Responsabilidades de la presidencia (caps. 1–4 y 8)', 'resp_presidencia' in temas) }}
+    {{ check_view('Obra misional — coord. con Sociedad de Socorro (cap. 23.6.2)', 'obra_misional' in temas) }}
+    {{ check_view('Templo e historia familiar (cap. 25.2.2)', 'templo_hf' in temas) }}
+    {{ check_view('Ministración — entrevistas trimestrales (cap. 21)', 'ministracion' in temas) }}
+    {{ check_view('Llamamientos, ordenaciones u otros asuntos del cuórum', 'llamamientos' in temas) }}
+    {{ check_view('Información transmitida desde la presidencia de estaca', 'info_presidencia' in temas) }}
+
+    <div class="div-label">D–F. Observaciones del asesor</div>
+    {{ obs_field('D. Necesidades identificadas', h.necesidades) }}
+    {{ obs_field('E. Miembros con atención especial', h.miembros_atencion) }}
+    {{ obs_field('F. Acciones propuestas', h.acciones_propuestas) }}
+
+    {{ observacion_form('cuorum', h) }}
+  </div>
+  {% endif %}
+</div>
+
+<!-- ══ HOJA 2: MINISTRACIÓN ══ -->
+<div class="card accent-olive" style="margin-bottom:14px">
+  <div class="card-header" style="background:var(--olive-lt)">
+    <strong style="color:var(--olive)">Hoja 2 — Ministración en el barrio</strong>
+    <span style="margin-left:auto">
+      {% set h = hojas.ministracion %}
+      {% if not h %}<span class="badge badge-none">Sin completar</span>
+      {% elif h.estado=='enviado' %}<span class="badge badge-ok">✓ Enviada</span>
+      {% elif h.estado=='revisado' %}<span class="badge badge-rev">Revisada</span>
+      {% else %}<span class="badge badge-draft">Borrador</span>{% endif %}
+    </span>
+  </div>
+  {% if hojas.ministracion %}{% set h = hojas.ministracion %}
+  <div class="card-body">
+    <div class="div-label">A. Indicadores</div>
+    <div class="metrics">
+      <div class="metric"><label>Hnos. ministrantes</label><input disabled value="{{ h.hermanos_activos }}"></div>
+      <div class="metric"><label>Entrevistas</label><input disabled value="{{ h.entrevistas_realizadas }}"></div>
+      <div class="metric"><label>Sin asignación</label><input disabled value="{{ h.familias_sin_asignacion }}"></div>
+      <div class="metric"><label>Asign. revisadas</label><input disabled value="{{ h.asignaciones_revisadas }}"></div>
+    </div>
+
+    <div class="div-label">B. Evaluación</div>
+    {{ sema_view('Todos los miembros tienen hermanos ministrantes asignados', h.est_cobertura_total) }}
+    {{ sema_view('Las entrevistas se realizan al menos cada trimestre', h.est_entrevistas) }}
+    {{ sema_view('Asignaciones coordinadas con la Sociedad de Socorro', h.est_coord_soc_socorro) }}
+    {{ sema_view('Los hermanos ministrantes contactan regularmente', h.est_contacto_regular) }}
+
+    <div class="div-label">C. Actividades realizadas</div>
+    {% set acts = h.actividades | from_json %}
+    {{ check_view('Me reuní con la presidencia para revisar asignaciones', 'revision_asig' in acts) }}
+    {{ check_view('Revisé coordinación con presidencia de Soc. de Socorro', 'coord_soc' in acts) }}
+    {{ check_view('Acompañé a la presidencia del cuórum a ministrar', 'acompane' in acts) }}
+    {{ check_view('Identifiqué miembros en riesgo de inactividad', 'inactivos' in acts) }}
+
+    <div class="div-label">D–F. Observaciones del asesor</div>
+    {{ obs_field('D. Situaciones o necesidades', h.situaciones) }}
+    {{ obs_field('E. Coord. con Sociedad de Socorro', h.coord_soc_socorro) }}
+    {{ obs_field('F. Plan de acción', h.plan_accion) }}
+
+    {{ observacion_form('ministracion', h) }}
+  </div>
+  {% endif %}
+</div>
+
+<!-- ══ HOJA 3: MISIONAL ══ -->
+<div class="card accent-rust" style="margin-bottom:14px">
+  <div class="card-header" style="background:var(--rust-lt)">
+    <strong style="color:var(--rust)">Hoja 3 — Obra misional y nuevos miembros</strong>
+    <span style="margin-left:auto">
+      {% set h = hojas.misional %}
+      {% if not h %}<span class="badge badge-none">Sin completar</span>
+      {% elif h.estado=='enviado' %}<span class="badge badge-ok">✓ Enviada</span>
+      {% elif h.estado=='revisado' %}<span class="badge badge-rev">Revisada</span>
+      {% else %}<span class="badge badge-draft">Borrador</span>{% endif %}
+    </span>
+  </div>
+  {% if hojas.misional %}{% set h = hojas.misional %}
+  <div class="card-body">
+    <div class="div-label">A. Indicadores</div>
+    <div class="metrics">
+      <div class="metric"><label>Bautismos</label><input disabled value="{{ h.bautismos }}"></div>
+      <div class="metric"><label>Nuevos miembros activos</label><input disabled value="{{ h.nuevos_miembros_activos }}"></div>
+      <div class="metric"><label>Misioneros TC</label><input disabled value="{{ h.misioneros_tiempo_completo }}"></div>
+      <div class="metric"><label>Relevados</label><input disabled value="{{ h.misioneros_relevados }}"></div>
+    </div>
+
+    <div class="div-label">B. Estado</div>
+    {{ sema_view('Presidencia conoce responsabilidades misionales (cap. 23.6.2)', h.est_pdte_conoce_resp) }}
+    {{ sema_view('Coordinación activa con el líder misional del barrio', h.est_coord_lider_misional) }}
+    {{ sema_view('Los nuevos miembros (últ. 12 meses) están siendo fortalecidos', h.est_nuevos_miembros) }}
+    {{ sema_view('Los miembros que regresan están siendo atendidos', h.est_miembros_regresan) }}
+
+    <div class="div-label">C. Actividades realizadas</div>
+    {% set acts = h.actividades | from_json %}
+    {{ check_view('Instruí a la presidencia sobre responsabilidades misionales', 'instruir_resp' in acts) }}
+    {{ check_view('Me reuní con el líder misional de barrio', 'lider_misional' in acts) }}
+    {{ check_view('Apoyé algún joven preparándose para la misión', 'joven_mision' in acts) }}
+    {{ check_view('Apoyé integración de miembros nuevos o que regresan', 'integracion' in acts) }}
+    {{ check_view('Referí candidatos a EnglishConnect / BYU-Pathway', 'pathway' in acts) }}
+
+    <div class="div-label">D–F. Observaciones del asesor</div>
+    {{ obs_field('D. Situación misional general', h.situacion_general) }}
+    {{ obs_field('E. Miembros con atención especial', h.miembros_atencion) }}
+    {{ obs_field('F. Comentarios o solicitudes', h.comentarios) }}
+
+    {{ observacion_form('misional', h) }}
+  </div>
+  {% endif %}
+</div>
+
+<!-- ══ HOJA 4: TEMPLO ══ -->
+<div class="card accent-amber" style="margin-bottom:14px">
+  <div class="card-header" style="background:var(--amber-lt)">
+    <strong style="color:var(--amber)">Hoja 4 — Templo e historia familiar</strong>
+    <span style="margin-left:auto">
+      {% set h = hojas.templo %}
+      {% if not h %}<span class="badge badge-none">Sin completar</span>
+      {% elif h.estado=='enviado' %}<span class="badge badge-ok">✓ Enviada</span>
+      {% elif h.estado=='revisado' %}<span class="badge badge-rev">Revisada</span>
+      {% else %}<span class="badge badge-draft">Borrador</span>{% endif %}
+    </span>
+  </div>
+  {% if hojas.templo %}{% set h = hojas.templo %}
+  <div class="card-body">
+    <div class="div-label">A. Indicadores</div>
+    <div class="metrics">
+      <div class="metric"><label>Con recomendación</label><input disabled value="{{ h.miembros_recomendacion }}"></div>
+      <div class="metric"><label>Jóvenes con rec.</label><input disabled value="{{ h.jovenes_recomendacion }}"></div>
+      <div class="metric"><label>Preparándose</label><input disabled value="{{ h.miembros_preparandose }}"></div>
+      <div class="metric"><label>Visitas coord.</label><input disabled value="{{ h.visitas_coordinadas }}"></div>
+    </div>
+
+    <div class="div-label">B. Evaluación</div>
+    {{ sema_view('Presidencia conoce responsabilidades en templo e hª familiar', h.est_pdte_conoce_resp) }}
+    {{ sema_view('El líder de templo e hª familiar está activo y coordinado', h.est_lider_thf) }}
+    {{ sema_view('Se trabaja con miembros sin siguiente ordenanza', h.est_siguiente_ordenanza) }}
+    {{ sema_view('Los hermanos del cuórum están activos en historia familiar', h.est_activos_hf) }}
+
+    <div class="div-label">C. Actividades realizadas</div>
+    {% set acts = h.actividades | from_json %}
+    {{ check_view('Instruí a la presidencia sobre templo e hª familiar (cap. 25.2.2)', 'instruir' in acts) }}
+    {{ check_view('Revisé en LCR miembros sin siguiente ordenanza del templo', 'lcr' in acts) }}
+    {{ check_view('Apoyé al líder de templo e historia familiar del barrio', 'lider_thf' in acts) }}
+    {{ check_view('Coordiné con consultores de templo de estaca', 'consultores' in acts) }}
+    {{ check_view('Animé a los hermanos a adorar en el templo regularmente', 'animar_templo' in acts) }}
+
+    <div class="div-label">D–F. Observaciones del asesor</div>
+    {{ obs_field('D. Estado de la obra de templo e hª familiar', h.estado_obra) }}
+    {{ obs_field('E. Miembros identificados para apoyo', h.miembros_apoyo) }}
+    {{ obs_field('F. Necesidades o solicitudes', h.necesidades) }}
+
+    {{ observacion_form('templo', h) }}
+  </div>
+  {% endif %}
+</div>
+
+<!-- ══ HOJA 5: GENERAL ══ -->
+<div class="card accent-purple" style="margin-bottom:14px">
+  <div class="card-header" style="background:var(--purple-lt)">
+    <strong style="color:var(--purple)">Hoja 5 — Estado general del barrio</strong>
+    <span style="margin-left:auto">
+      {% set h = hojas.general %}
+      {% if not h %}<span class="badge badge-none">Sin completar</span>
+      {% elif h.estado=='enviado' %}<span class="badge badge-ok">✓ Enviada</span>
+      {% elif h.estado=='revisado' %}<span class="badge badge-rev">Revisada</span>
+      {% else %}<span class="badge badge-draft">Borrador</span>{% endif %}
+    </span>
+  </div>
+  {% if hojas.general %}{% set h = hojas.general %}
+  <div class="card-body">
+    <div class="div-label">A. Evaluación general</div>
+    {{ sema_view('Vitalidad general del barrio y del cuórum', h.est_vitalidad) }}
+    {{ sema_view('Relación de trabajo con el obispado', h.est_obispado) }}
+    {{ sema_view('Progreso de los miembros en las ordenanzas del templo', h.est_ordenanzas) }}
+    {{ sema_view('Participación en obra misional', h.est_misional) }}
+    {{ sema_view('Participación en templo e historia familiar', h.est_templo) }}
+    {{ sema_view('Cobertura de ministración', h.est_ministracion) }}
+
+    <div class="div-label">B. Actividades con el obispado</div>
+    {% set acts = h.actividades_obispado | from_json %}
+    {{ check_view('Asistí a la reunión del obispado o del consejo de barrio', 'reunion_obispado' in acts) }}
+    {{ check_view('Me reuní individualmente con el obispo para coordinar', 'reunion_obispo' in acts) }}
+    {{ check_view('Extendí llamamientos o aparté miembros (con autorización)', 'llamamientos' in acts) }}
+    {{ check_view('Representé al presidente de estaca en una ordenación', 'ordenacion' in acts) }}
+
+    <div class="div-label">C–E. Observaciones del asesor</div>
+    {{ obs_field('C. Fortalezas del barrio este período', h.fortalezas) }}
+    {{ obs_field('C. Desafíos que requieren atención', h.desafios) }}
+    {{ obs_field('D. Plan de acción para el siguiente período', h.plan_accion) }}
+    {{ obs_field('E. Solicitudes a la presidencia de estaca', h.solicitudes) }}
+
+    {{ observacion_form('general', h) }}
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

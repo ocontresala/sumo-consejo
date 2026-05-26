@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+{% block title %}{{ meses[mes] }} {{ anio }}{% endblock %}
+{% block extra_head %}
+<style>
+.hoja-pane{display:none}
+.hoja-pane.active-pane{display:block}
+</style>
+{% endblock %}
+{% block content %}
+
+<!-- HEADER -->
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+  <a href="{{ url_for('dashboard') }}" style="width:36px;height:36px;border-radius:8px;background:var(--white);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:18px;flex-shrink:0;text-decoration:none">‹</a>
+  <div>
+    <div style="font-size:12px;color:var(--text-muted)">{{ asig.unidad_nombre }}</div>
+    <div style="font-size:18px;font-weight:700;color:var(--navy)">{{ meses[mes] }} {{ anio }}</div>
+  </div>
+</div>
+
+{% set hojas_list = [
+  ('cuorum',       hojas.cuorum,       'navy',   '1', 'Cuórum'),
+  ('ministracion', hojas.ministracion, 'olive',  '2', 'Ministración'),
+  ('misional',     hojas.misional,     'rust',   '3', 'Misional'),
+  ('templo',       hojas.templo,       'amber',  '4', 'Templo'),
+  ('general',      hojas.general,      'purple', '5', 'General'),
+] %}
+
+<!-- PILLS DE HOJAS -->
+<div class="hojas-strip">
+  {% for key, hoja, color, num, nombre in hojas_list %}
+  <div class="hoja-pill {% if loop.first %}active{% endif %}" data-key="{{ key }}" onclick="showHoja('{{ key }}')">
+    <div class="pill-num">Hoja {{ num }}</div>
+    <div class="pill-name">{{ nombre }}</div>
+    <div class="pill-badge">
+      {% if not hoja %}<span class="badge badge-none" style="font-size:9px">—</span>
+      {% elif hoja.estado == 'enviado' %}<span class="badge badge-ok" style="font-size:9px">✓</span>
+      {% elif hoja.estado == 'revisado' %}<span class="badge badge-rev" style="font-size:9px">Rev</span>
+      {% else %}<span class="badge badge-draft" style="font-size:9px">Bor</span>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% macro sema(name, label, val, ro) %}
+<div class="sema-row">
+  <span class="sema-label">{{ label }}</span>
+  <div class="sema-btns">
+    <button type="button" class="sema-btn {% if val=='bien' %}selected{% endif %}" data-v="bien" onclick="selectSema(this,'{{name}}')" {% if ro %}disabled{% endif %}></button>
+    <button type="button" class="sema-btn {% if val=='proceso' %}selected{% endif %}" data-v="proceso" onclick="selectSema(this,'{{name}}')" {% if ro %}disabled{% endif %}></button>
+    <button type="button" class="sema-btn {% if val=='atencion' %}selected{% endif %}" data-v="atencion" onclick="selectSema(this,'{{name}}')" {% if ro %}disabled{% endif %}></button>
+  </div>
+  <input type="hidden" class="sema-input" name="{{ name }}" value="{{ val }}">
+</div>
+{% endmacro %}
+
+{% macro check(name, val, txt, checked, ro) %}
+<label class="check-item {% if checked %}checked{% endif %}" onclick="toggleCheck(this)" {% if ro %}style="pointer-events:none;opacity:.7"{% endif %}>
+  <input type="checkbox" name="{{ name }}" value="{{ val }}" {% if checked %}checked{% endif %}>
+  <div class="cbox">✓</div><span class="check-text">{{ txt }}</span>
+</label>
+{% endmacro %}
+
+{% macro action_bar(hoja) %}
+{% set enviado = hoja and hoja.estado in ['enviado','revisado'] %}
+<div class="action-bar">
+  {% if enviado %}
+    <div style="font-size:12px;color:var(--ok);display:flex;align-items:center;gap:6px;flex:1">
+      ✓ Enviada {% if hoja.fecha_envio %}· {{ hoja.fecha_envio[:10] }}{% endif %}
+    </div>
+    <button type="submit" name="enviar" value="0" class="btn btn-outline" style="flex:0 0 auto">Editar</button>
+  {% else %}
+    <button type="submit" name="enviar" value="0" class="btn btn-outline">Guardar</button>
+    <button type="submit" name="enviar" value="1" class="btn btn-primary"
+      onclick="return confirm('¿Enviar esta hoja a la presidencia?')">Enviar ✓</button>
+  {% endif %}
+</div>
+{% endmacro %}
+
+<!-- ══ HOJA 1 ══ -->
+<div id="hoja-cuorum" class="hoja-pane active-pane">
+{% set h = hojas.cuorum %}{% set ro = h and h.estado=='revisado' %}
+<div class="card accent-navy">
+  <div class="card-header" style="background:var(--navy-lt)">
+    <strong style="color:var(--navy)">Cuórum de élderes</strong>
+    <span style="margin-left:auto">
+      {% if h and h.estado=='enviado' %}<span class="badge badge-ok">✓ Enviada</span>
+      {% elif h and h.estado=='revisado' %}<span class="badge badge-rev">Revisada</span>
+      {% elif h %}<span class="badge badge-draft">Borrador</span>
+      {% else %}<span class="badge badge-none">Sin iniciar</span>{% endif %}
+    </span>
+  </div>
+  <div class="card-body">
+  <form method="POST" action="{{ url_for('guardar_hoja', anio=anio, mes=mes, hoja_key='cuorum') }}">
+    <div class="div-label">A. Indicadores</div>
+    <div class="metrics">
+      <div class="metric"><label>Reun. presidencia</label><input type="number" name="reuniones_presidencia" min="0" value="{{ h.reuniones_presidencia if h else 0 }}" {% if ro %}disabled{% endif %} inputmode="numeric"></div>
+      <div class="metric"><label>Reun. correlación</label><input type="number" name="reuniones_correlacion" min="0" value="{{ h.reuniones_correlacion if h else 0 }}" {% if ro %}disabled{% endif %} inputmode="numeric"></div>
+      <div class="metric"><label>Sesiones asistidas</label><input type="number" name="sesiones_asistidas" min="0" value="{{ h.sesiones_asistidas if h else 0 }}" {% if ro %}disabled{% endif %} inputmode="numeric"></div>
+      <div class="metric"><label>Élderes preparación</label><input type="number" name="elderes_preparacion" min="0" value="{{ h.elderes_preparacion if h else 0 }}" {% if ro %}disabled{% endif %} inputmode="numeric"></div>
+    </div>
+    <div class="div-label">B. Estado presidencia</div>
+    {{ sema('est_presidencia_completa','Presidencia llamada, completa y activa', h.est_presidencia_completa if h else 'proceso', ro) }}
+    {{ sema('est_conoce_responsabilidades','Conoce sus responsabilidades (caps. 1–4 y 8)', h.est_conoce_responsabilidades if h else 'proceso', ro) }}
+    {{ sema('est_reuniones_regulares','Reuniones del cuórum con regularidad', h.est_reuniones_regulares if h else 'proceso', ro) }}
+    {{ sema('est_transmite_informacion','Transmite información de la presidencia de estaca', h.est_transmite_informacion if h else 'proceso', ro) }}
+    <div class="div-label">C. Temas enseñados</div>
+    {% set temas = (h.temas_ensenados | from_json) if h else [] %}
+    {{ check('temas_ensenados','resp_presidencia','Responsabilidades de la presidencia (caps. 1–4 y 8)','resp_presidencia' in temas, ro) }}
+    {{ check('temas_ensenados','obra_misional','Obra misional y coordinación con Soc. de Socorro (cap. 23.6.2)','obra_misional' in temas, ro) }}
+    {{ check('temas_ensenados','templo_hf','Templo e historia familiar (cap. 25.2.2)','templo_hf' in temas, ro) }}
+    {{ check('temas_ensenados','ministracion','Ministración — entrevistas trimestrales (cap. 21)','ministracion' in temas, ro) }}
+    {{ check('temas_ensenados','llamamientos','Llamamientos, ordenaciones u otros asuntos','llamamientos' in temas, ro) }}
+    {{ check('temas_ensenados','info_presidencia','Información de la presidencia de estaca','info_presidencia' in temas, ro) }}
+    <div class="div-label">D. Necesidades identificadas</div>
+    <div class="form-group"><textarea name="necesidades" placeholder="Describe las necesidades de la presidencia del cuórum…" {% if ro %}readonly{% endif %}>{{ h.necesidades if h else '' }}</textarea></div>
+    <div class="div-label">E. Miembros con atención especial</div>
+    <div class="form-group"><textarea name="miembros_atencion" placeholder="Miembros del cuórum que requieren atención especial…" {% if ro %}readonly{% endif %}>{{ h.miembros_atencion if h else '' }}</textarea></div>
+    <div class="div-label">F. Acciones propuestas</div>
+    <div class="form-group"><textarea name="acciones_propuestas" placeholder="Plan de acción para el siguiente período…" {% if ro %}readonly{% endif %}>{{ h.acciones_propuestas if h else '' }}</textarea></div>
+    {% if not ro %}{{ action_bar(h) }}{% endif %}
+  </form>
+  </div>
+</div>
+</div>
+
+<!-- ══ HOJA 2 ══ -->
+<div id="hoja-ministracion" class="hoja-pane">
+{% set h = hojas.ministracion %}{% set ro = h and h.estado=='revisado' %}
+<div class="card accent-olive">
+  <div class="card-header" style="background:var(--olive-lt)">
+    <strong style="color:var(--olive)">Ministración en el barrio</strong>
+    <span style="margin-left:auto">
+      {% if h and h.estado=='enviado' %}<span class="badge badge-ok">✓ Enviada</span>
+      {% elif h and h.estado=='revisado' %}<span class="badge badge-rev">Revisada</span>
+      {% elif h %}<span class="badge badge-draft">Borrador</span>
+      {% else %}<span class="badge badge-none">Sin iniciar</span>{% endif %}
+    </span>
+  </div>
+  <div class="card-body">
+  <form method="POST" action="{{ url_for('guardar_hoja', anio=anio, mes=mes, hoja_key='ministracion') }}">
+    <div class="div-label">A. Indicadores</div>
+    <div class="metrics">
+      <div class="metric"><label>Hnos. ministrantes activos</label><input type="number" name="hermanos_activos" min="0" value="{{ h.hermanos_activos if h else 0 }}" {% if ro %}disabled{% endif %} inputmode="numeric"></div>
+      <div class="metric"><label>Entrevistas realizadas</label><input type="number" name="entrevistas_realizadas" min="0" value="{{ h.entrevistas_realizadas if h else 0 }}" {% if ro %}disabled{% endif %} inputmode="numeric"></div>
+      <div class="metric"><label>Familias sin asignación</label><input type="number" name="familias_sin_asignacion" min="0" value="{{ h.familias_sin_asignacion if h else 0 }}" {% if ro %}disabled{% endif %} inputmode="numeric"></div>
+      <div class="metric"><label>Asignaciones revisadas</label><input type="number" name="asignaciones_revisadas" min="0" value="{{ h.asignaciones_revisadas if h else 0 }}" {% if ro %}disabled{% endif %} inputmode="numeric"></div>
+    </div>
+    <div class="div-label">B. Evaluación</div>
+    {% set acts = (h.actividades | from_json) if h else [] %}
+    {{ sema('est_cobertura_total','Todos los miembros tienen hermanos ministrantes asignados', h.est_cobertura_total if h else 'proceso', ro) }}
+    {{ sema('est_entrevistas','Entrevistas realizadas al menos cada trimestre', h.est_entrevistas if h else 'proceso', ro) }}
+    {{ sema('est_coord_soc_socorro','Coord. de asignaciones con la Sociedad de Socorro', h.est_coord_soc_socorro if h else 'proceso', ro) }}
+    {{ sema('est_contacto_regular','Hermanos ministrantes contactan regularmente', h.est_contacto_regular if h else 'proceso', ro) }}
+    <div class="div-label">C. Actividades realizadas</div>
+    {{ check('actividades','revision_asig','Me reuní con la presidencia para revisar asignaciones','revision_asig' in acts, ro) }}
+    {{ check('actividades','coord_soc','Revisé coordinación con presidencia de Soc. de Socorro','coord_soc' in acts, ro) }}
+    {{ check('actividades','acompane','Acompañé a la presidencia del cuórum a ministrar','acompane' in acts, ro) }}
+    {{ check('actividades','inactivos','Identifiqué miembros en riesgo de inactividad','inactivos' in acts, ro) }}
+    <div class="div-label">D. Situaciones o necesidades</div>
+    <div class="form-group"><textarea name="situaciones" placeholder="Situaciones o necesidades identificadas en el barrio…" {% if ro %}readonly{% endif %}>{{ h.situaciones if h else '' }}</textarea></div>
+    <div class="div-label">E. Coordinación con Soc. de Socorro</div>
+    <div class="form-group"><textarea name="coord_soc_socorro" placeholder="Notas sobre la coordinación…" {% if ro %}readonly{% endif %}>{{ h.coord_soc_socorro if h else '' }}</textarea></div>
+    <div class="div-label">F. Plan de acción</div>
+    <div class="form-group"><textarea name="plan_accion" placeholder="Plan de acción para el siguiente trimestre…" {% if ro %}readonly{% endif %}>{{ h.plan_accion if h else '' }}</textarea></div>
+    {% if not ro %}{{ action_bar(h) }}{% endif %}
+  </form>
+  </div>
+</div>
+</div>
+
+<!-- ══ HOJA 3 ══ -->
+<div id="hoja-misional" class="hoja-pane">
+{% set h = hojas.misional %}{% set ro = h and h.estado=='revisado' %}
+<div class="card accent-rust">
+  <div class="card-header" style="background:var(--rust-lt)">
+    <strong style="color:var(--rust)">Obra misional y nuevos miembros</strong>
+    <span style="margin-left:auto">
+      {% if h and h.estado=='enviado' %}<span class="badge badge-ok">✓ Enviada</span>
+      {% elif h and h.estado=='revisado' %}<span class="badge badge-rev">Revisada</span>
+      {% elif h %}<span class="badge badge-draft">Borrador</span>
+      {% else %}<span class="badge badge-none">Sin iniciar</span>{% endif %}
+    </span>
+  </div>
+  <div class="card-body">
+  <form method="POST" action="{{ url_for('guardar_hoja', anio=anio, mes=mes, hoja_key='misional') }}">
+    <div class="div-label">A. Indicadores</div>
+    <div class="metrics">
+      <div class="metric"><label>Bautismos</label><input type="number" name="bautismos" min="0" value="{{ h.bautismos if h else 0 }}" {% if ro %}disabled{% endif %} inputmode="numeric"></div>
+      <div class="metric"><label>Nuevos miembros activos</label><input type="number" name="nuevos_miembros_activos" min="0" value="{{ h.nuevos_miembros_activos if h else 0 }}" {% if ro %}disabled{% endif %} inputmode="numeric"></div>
+      <div class="metric"><label>Misioneros TC</label><input type="number" name="misioneros_tiempo_completo" min="0" value="{{ h.misioneros_tiempo_completo if h else 0 }}" {% if ro %}disabled{% endif %} inputmode="numeric"></div>
+      <div class="metric"><label>Misioneros relevados</label><input type="number" name="misioneros_relevados" min="0" value="{{ h.misioneros_relevados if h else 0 }}" {% if ro %}disabled{% endif %} inputmode="numeric"></div>
+    </div>
+    <div class="div-label">B. Estado</div>
+    {% set acts = (h.actividades | from_json) if h else [] %}
+    {{ sema('est_pdte_conoce_resp','Presidencia conoce responsabilidades misionales', h.est_pdte_conoce_resp if h else 'proceso', ro) }}
+    {{ sema('est_coord_lider_misional','Coordinación activa con el líder misional del barrio', h.est_coord_lider_misional if h else 'proceso', ro) }}
+    {{ sema('est_nuevos_miembros','Nuevos miembros (últ. 12 meses) siendo fortalecidos', h.est_nuevos_miembros if h else 'proceso', ro) }}
+    {{ sema('est_miembros_regresan','Miembros que regresan siendo atendidos', h.est_miembros_regresan if h else 'proceso', ro) }}
+    <div class="div-label">C. Actividades</div>
+    {{ check('actividades','instruir_resp','Instruí a la presidencia sobre responsabilidades misionales','instruir_resp' in acts, ro) }}
+    {{ check('actividades','lider_misional','Me reuní con el líder misional de barrio','lider_misional' in acts, ro) }}
+    {{ check('actividades','joven_mision','Apoyé algún joven preparándose para la misión','joven_mision' in acts, ro) }}
+    {{ check('actividades','integracion','Apoyé integración de miembros nuevos o que regresan','integracion' in acts, ro) }}
+    {{ check('actividades','pathway','Referí candidatos a EnglishConnect / BYU-Pathway','pathway' in acts, ro) }}
+    <div class="div-label">D. Situación misional general</div>
+    <div class="form-group"><textarea name="situacion_general" placeholder="Estado general de la obra misional en el barrio…" {% if ro %}readonly{% endif %}>{{ h.situacion_general if h else '' }}</textarea></div>
+    <div class="div-label">E. Miembros con atención especial</div>
+    <div class="form-group"><textarea name="miembros_atencion" placeholder="Nuevos miembros o que regresan que necesitan apoyo…" {% if ro %}readonly{% endif %}>{{ h.miembros_atencion if h else '' }}</textarea></div>
+    <div class="div-label">F. Comentarios o solicitudes</div>
+    <div class="form-group"><textarea name="comentarios" placeholder="Solicitudes a la presidencia de estaca…" {% if ro %}readonly{% endif %}>{{ h.comentarios if h else '' }}</textarea></div>
+    {% if not ro %}{{ action_bar(h) }}{% endif %}
+  </form>
+  </div>
+</div>
+</div>
+
+<!-- ══ HOJA 4 ══ -->
+<div id="hoja-templo" class="hoja-pane">
+{% set h = hojas.templo %}{% set ro = h and h.estado=='revisado' %}
+<div class="card accent-amber">
+  <div class="card-header" style="background:var(--amber-lt)">
+    <strong style="color:var(--amber)">Templo e historia familiar</strong>
+    <span style="margin-left:auto">
+      {% if h and h.estado=='enviado' %}<span class="badge badge-ok">✓ Enviada</span>
+      {% elif h and h.estado=='revisado' %}<span class="badge badge-rev">Revisada</span>
+      {% elif h %}<span class="badge badge-draft">Borrador</span>
+      {% else %}<span class="badge badge-none">Sin iniciar</span>{% endif %}
+    </span>
+  </div>
+  <div class="card-body">
+  <form method="POST" action="{{ url_for('guardar_hoja', anio=anio, mes=mes, hoja_key='templo') }}">
+    <div class="div-label">A. Indicadores</div>
+    <div class="metrics">
+      <div class="metric"><label>Miembros con recomendación</label><input type="number" name="miembros_recomendacion" min="0" value="{{ h.miembros_recomendacion if h else 0 }}" {% if ro %}disabled{% endif %} inputmode="numeric"></div>
+      <div class="metric"><label>Jóvenes con recomendación</label><input type="number" name="jovenes_recomendacion" min="0" value="{{ h.jovenes_recomendacion if h else 0 }}" {% if ro %}disabled{% endif %} inputmode="numeric"></div>
+      <div class="metric"><label>Preparándose para investidura</label><input type="number" name="miembros_preparandose" min="0" value="{{ h.miembros_preparandose if h else 0 }}" {% if ro %}disabled{% endif %} inputmode="numeric"></div>
+      <div class="metric"><label>Visitas al templo coord.</label><input type="number" name="visitas_coordinadas" min="0" value="{{ h.visitas_coordinadas if h else 0 }}" {% if ro %}disabled{% endif %} inputmode="numeric"></div>
+    </div>
+    <div class="div-label">B. Evaluación</div>
+    {% set acts = (h.actividades | from_json) if h else [] %}
+    {{ sema('est_pdte_conoce_resp','Presidencia conoce responsabilidades en templo e hª familiar', h.est_pdte_conoce_resp if h else 'proceso', ro) }}
+    {{ sema('est_lider_thf','Líder de templo e hª familiar activo y coordinado', h.est_lider_thf if h else 'proceso', ro) }}
+    {{ sema('est_siguiente_ordenanza','Se trabaja con miembros sin siguiente ordenanza', h.est_siguiente_ordenanza if h else 'proceso', ro) }}
+    {{ sema('est_activos_hf','Hermanos del cuórum activos en historia familiar', h.est_activos_hf if h else 'proceso', ro) }}
+    <div class="div-label">C. Actividades</div>
+    {{ check('actividades','instruir','Instruí a la presidencia sobre templo e hª familiar (cap. 25.2.2)','instruir' in acts, ro) }}
+    {{ check('actividades','lcr','Revisé en LCR miembros sin siguiente ordenanza','lcr' in acts, ro) }}
+    {{ check('actividades','lider_thf','Apoyé al líder de templo e historia familiar del barrio','lider_thf' in acts, ro) }}
+    {{ check('actividades','consultores','Coordiné con consultores de templo de estaca','consultores' in acts, ro) }}
+    {{ check('actividades','animar_templo','Animé a hermanos a adorar en el templo regularmente','animar_templo' in acts, ro) }}
+    <div class="div-label">D. Estado de la obra</div>
+    <div class="form-group"><textarea name="estado_obra" placeholder="Estado general de la obra de templo e historia familiar…" {% if ro %}readonly{% endif %}>{{ h.estado_obra if h else '' }}</textarea></div>
+    <div class="div-label">E. Miembros identificados para apoyo</div>
+    <div class="form-group"><textarea name="miembros_apoyo" placeholder="Miembros específicos que necesitan apoyo…" {% if ro %}readonly{% endif %}>{{ h.miembros_apoyo if h else '' }}</textarea></div>
+    <div class="div-label">F. Necesidades o solicitudes</div>
+    <div class="form-group"><textarea name="necesidades" placeholder="Solicitudes a la presidencia de estaca…" {% if ro %}readonly{% endif %}>{{ h.necesidades if h else '' }}</textarea></div>
+    {% if not ro %}{{ action_bar(h) }}{% endif %}
+  </form>
+  </div>
+</div>
+</div>
+
+<!-- ══ HOJA 5 ══ -->
+<div id="hoja-general" class="hoja-pane">
+{% set h = hojas.general %}{% set ro = h and h.estado=='revisado' %}
+<div class="card accent-purple">
+  <div class="card-header" style="background:var(--purple-lt)">
+    <strong style="color:var(--purple)">Estado general del barrio</strong>
+    <span style="margin-left:auto">
+      {% if h and h.estado=='enviado' %}<span class="badge badge-ok">✓ Enviada</span>
+      {% elif h and h.estado=='revisado' %}<span class="badge badge-rev">Revisada</span>
+      {% elif h %}<span class="badge badge-draft">Borrador</span>
+      {% else %}<span class="badge badge-none">Sin iniciar</span>{% endif %}
+    </span>
+  </div>
+  <div class="card-body">
+  <form method="POST" action="{{ url_for('guardar_hoja', anio=anio, mes=mes, hoja_key='general') }}">
+    <div class="div-label">A. Evaluación general</div>
+    {% set acts = (h.actividades_obispado | from_json) if h else [] %}
+    {{ sema('est_vitalidad','Vitalidad general del barrio y del cuórum', h.est_vitalidad if h else 'proceso', ro) }}
+    {{ sema('est_obispado','Relación de trabajo con el obispado', h.est_obispado if h else 'proceso', ro) }}
+    {{ sema('est_ordenanzas','Progreso en las ordenanzas del templo', h.est_ordenanzas if h else 'proceso', ro) }}
+    {{ sema('est_misional','Participación en obra misional', h.est_misional if h else 'proceso', ro) }}
+    {{ sema('est_templo','Participación en templo e historia familiar', h.est_templo if h else 'proceso', ro) }}
+    {{ sema('est_ministracion','Cobertura de ministración', h.est_ministracion if h else 'proceso', ro) }}
+    <div class="div-label">B. Actividades con el obispado</div>
+    {{ check('actividades_obispado','reunion_obispado','Asistí a reunión del obispado o consejo de barrio','reunion_obispado' in acts, ro) }}
+    {{ check('actividades_obispado','reunion_obispo','Me reuní individualmente con el obispo','reunion_obispo' in acts, ro) }}
+    {{ check('actividades_obispado','llamamientos','Extendí llamamientos o aparté miembros (con autorización)','llamamientos' in acts, ro) }}
+    {{ check('actividades_obispado','ordenacion','Representé al presidente de estaca en una ordenación','ordenacion' in acts, ro) }}
+    <div class="div-label">C. Fortalezas del barrio</div>
+    <div class="form-group"><textarea name="fortalezas" placeholder="Lo que está funcionando bien este período…" {% if ro %}readonly{% endif %}>{{ h.fortalezas if h else '' }}</textarea></div>
+    <div class="div-label">C. Desafíos que requieren atención</div>
+    <div class="form-group"><textarea name="desafios" placeholder="Situaciones que necesitan apoyo de la presidencia…" {% if ro %}readonly{% endif %}>{{ h.desafios if h else '' }}</textarea></div>
+    <div class="div-label">D. Plan de acción</div>
+    <div class="form-group"><textarea name="plan_accion" placeholder="Acciones concretas para el siguiente período…" {% if ro %}readonly{% endif %}>{{ h.plan_accion if h else '' }}</textarea></div>
+    <div class="div-label">E. Solicitudes a la presidencia</div>
+    <div class="form-group"><textarea name="solicitudes" placeholder="Necesidades o solicitudes específicas…" {% if ro %}readonly{% endif %}>{{ h.solicitudes if h else '' }}</textarea></div>
+    {% if not ro %}{{ action_bar(h) }}{% endif %}
+  </form>
+  </div>
+</div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+// Init semaphore display
+document.querySelectorAll('.sema-input').forEach(inp => {
+  const row = inp.closest('.sema-row');
+  const val = inp.value;
+  if(val){
+    const btn = row.querySelector(`.sema-btn[data-v="${val}"]`);
+    if(btn) btn.classList.add('selected');
+  }
+});
+// Show first hoja
+showHoja('cuorum');
+{% endblock %}

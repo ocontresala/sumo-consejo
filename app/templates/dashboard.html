@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Mis informes{% endblock %}
+{% block extra_head %}
+<style>
+.period-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);-webkit-tap-highlight-color:transparent}
+.period-card:active{background:var(--bg)}
+.period-meta{flex:1;min-width:0}
+.period-title{font-size:16px;font-weight:700;color:var(--navy)}
+.period-hojas{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dot-ok{background:var(--ok)}
+.dot-draft{background:var(--warn)}
+.dot-none{background:var(--border)}
+.dot-rev{background:var(--navy)}
+</style>
+{% endblock %}
+{% block content %}
+{% set now = now %}
+
+<div class="page-header">
+  <div class="eyebrow">Asesor de barrio</div>
+  <h1>{{ session.nombre }}</h1>
+  {% if asig %}<div class="subtitle">{{ asig.unidad_nombre }}</div>{% endif %}
+</div>
+
+{% if asig %}
+<!-- STATS -->
+{% set total_env = informes | sum(attribute='enviadas') %}
+<div class="stats-row">
+  <div class="stat-chip">
+    <div class="val" style="color:var(--navy)">{{ informes|length }}</div>
+    <div class="lbl">Períodos</div>
+  </div>
+  <div class="stat-chip">
+    <div class="val" style="color:var(--ok)">{{ total_env }}</div>
+    <div class="lbl">Hojas enviadas</div>
+  </div>
+  <div class="stat-chip">
+    <div class="val" style="color:var(--warn)">{{ (informes|length * 5) - total_env }}</div>
+    <div class="lbl">Pendientes</div>
+  </div>
+</div>
+
+<!-- CTA MES ACTUAL -->
+<a href="{{ url_for('ver_informe', anio=now.year, mes=now.month) }}" class="btn btn-gold btn-block" style="margin-bottom:18px;font-size:15px">
+  + Informe {{ meses[now.month] }} {{ now.year }}
+</a>
+
+<!-- HISTORIAL -->
+{% if informes %}
+<div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px">Historial</div>
+{% for item in informes %}
+{% set inf = item.inf %}
+{% set h = item.hojas %}
+<a href="{{ url_for('ver_informe', anio=inf.periodo_anio, mes=inf.periodo_mes) }}" class="period-card" style="text-decoration:none">
+  <div style="width:44px;height:44px;border-radius:10px;background:var(--navy-lt);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">
+    <div style="font-size:10px;font-weight:700;color:var(--navy);text-transform:uppercase">{{ meses[inf.periodo_mes][:3] }}</div>
+    <div style="font-size:14px;font-weight:700;color:var(--navy)">{{ inf.periodo_anio }}</div>
+  </div>
+  <div class="period-meta">
+    <div class="period-title">{{ meses[inf.periodo_mes] }} {{ inf.periodo_anio }}</div>
+    <div class="period-hojas">
+      {% for hoja, label in [(h.cuorum,'C'),(h.ministracion,'M'),(h.misional,'Mi'),(h.templo,'T'),(h.general,'G')] %}
+        {% if not hoja %}<span class="dot dot-none" title="{{ label }}"></span>
+        {% elif hoja.estado == 'revisado' %}<span class="dot dot-rev" title="{{ label }}"></span>
+        {% elif hoja.estado == 'enviado' %}<span class="dot dot-ok" title="{{ label }}"></span>
+        {% else %}<span class="dot dot-draft" title="{{ label }}"></span>{% endif %}
+      {% endfor %}
+      <span style="font-size:11px;color:var(--text-muted);margin-left:4px">{{ item.enviadas }}/5 enviadas</span>
+    </div>
+  </div>
+  <div style="color:var(--text-muted);font-size:18px">›</div>
+</a>
+{% endfor %}
+{% else %}
+<div class="card"><div class="card-body" style="text-align:center;padding:32px;color:var(--text-muted)">
+  No tienes informes aún. ¡Crea el primero!
+</div></div>
+{% endif %}
+
+<!-- LEYENDA DOTS -->
+<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;font-size:11px;color:var(--text-muted)">
+  <span><span class="dot dot-ok" style="display:inline-block;vertical-align:middle;margin-right:4px"></span>Enviada</span>
+  <span><span class="dot dot-draft" style="display:inline-block;vertical-align:middle;margin-right:4px"></span>Borrador</span>
+  <span><span class="dot dot-rev" style="display:inline-block;vertical-align:middle;margin-right:4px"></span>Revisada</span>
+  <span><span class="dot dot-none" style="display:inline-block;vertical-align:middle;margin-right:4px"></span>Sin iniciar</span>
+</div>
+
+{% else %}
+<div class="card"><div class="card-body" style="text-align:center;padding:40px;color:var(--text-muted)">No tienes unidad asignada.</div></div>
+{% endif %}
+{% endblock %}
