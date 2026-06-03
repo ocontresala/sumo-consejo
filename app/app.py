@@ -152,20 +152,19 @@ def init_db():
             FOREIGN KEY(informe_id) REFERENCES informe(id)
         );
         """)
-        # Migrate: add estado/fecha_envio to hoja tables if missing
+        # Migrate: add columns to hoja tables if missing
         for tabla in ['hoja_cuorum','hoja_ministracion','hoja_misional','hoja_templo','hoja_general']:
-            try:
-                db.execute(f'ALTER TABLE {tabla} ADD COLUMN estado TEXT DEFAULT "borrador"')
-                db.commit()
-            except: pass
-            try:
-                db.execute(f'ALTER TABLE {tabla} ADD COLUMN fecha_envio TEXT')
-                db.commit()
-            except: pass
-            try:
-                db.execute(f'ALTER TABLE {tabla} ADD COLUMN observacion_presidencia TEXT')
-                db.commit()
-            except: pass
+            for col, default in [
+                ('estado', 'TEXT DEFAULT "borrador"'),
+                ('fecha_envio', 'TEXT'),
+                ('observacion_presidencia', 'TEXT'),
+                ('aprobado_por', 'TEXT'),
+                ('fecha_aprobacion', 'TEXT'),
+            ]:
+                try:
+                    db.execute(f'ALTER TABLE {tabla} ADD COLUMN {col} {default}')
+                    db.commit()
+                except: pass
 
         row = db.execute("SELECT COUNT(*) as c FROM usuario").fetchone()
         if row['c'] == 0:
@@ -274,10 +273,17 @@ def get_todas_hojas(informe_id):
     }
 
 # ── ROUTES ──────────────────────────────────────────
+
 @app.route('/')
+def home():
+    return render_template('home.html')
+
+@app.route('/sumoconsejo')
+@app.route('/sumoconsejo/')
 def index():
     return redirect(url_for('dashboard') if 'user_id' in session else url_for('login'))
 
+@app.route('/sumoconsejo/login', methods=['GET','POST'])
 @app.route('/login', methods=['GET','POST'])
 def login():
     if request.method == 'POST':
@@ -296,6 +302,7 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
+@app.route('/sumoconsejo/dashboard')
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -320,6 +327,7 @@ def dashboard():
     return render_template('dashboard.html', asig=asig, informes=informes_con_estado,
                            meses=MESES, now=now)
 
+@app.route('/sumoconsejo/admin')
 @app.route('/admin')
 @login_required
 @admin_required
@@ -373,6 +381,12 @@ def guardar_hoja(anio, mes, hoja_key):
     inf  = get_or_create_informe(asig['id'], anio, mes)
     iid  = inf['id']
     f    = request.form
+    # Bloquear si la hoja ya fue enviada o aprobada
+    inf_check = get_or_create_informe(asig['id'], anio, mes)
+    hoja_actual = get_hoja(HOJAS_INFO[hoja_key][0], inf_check['id'])
+    if hoja_actual and dict(hoja_actual).get('estado') in ['enviado', 'aprobado']:
+        flash('Esta hoja ya fue enviada y está pendiente de revisión por la presidencia.', 'error')
+        return redirect(url_for('ver_informe', anio=anio, mes=mes))
     enviar = f.get('enviar') == '1'
     estado = 'enviado' if enviar else 'borrador'
     fecha_envio = "datetime('now')" if enviar else 'NULL'
@@ -597,6 +611,60 @@ def admin_resetear_informe(inf_id):
             db.execute(f'DELETE FROM {tabla} WHERE informe_id=?', (inf_id,))
         db.commit()
     flash('Todas las hojas del informe fueron eliminadas. El asesor puede volver a diligenciarlas.', 'success')
+    return redirect(url_for('admin_ver_informe', inf_id=inf_id))
+
+
+@app.route('/admin/aprobar/<int:inf_id>/<hoja_key>', methods=['POST'])
+@login_required
+@admin_required
+def admin_aprobar_hoja(inf_id, hoja_key):
+    tabla = HOJAS_INFO.get(hoja_key, [None])[0]
+    if not tabla:
+        flash('Hoja no válida.', 'error')
+        return redirect(url_for('admin_ver_informe', inf_id=inf_id))
+    obs = request.form.get('observacion', '')
+    aprobado_por = session['nombre']
+    with get_db() as db:
+        try:
+            db.execute(f"ALTER TABLE {tabla} ADD COLUMN aprobado_por TEXT")
+            db.commit()
+        except: pass
+        try:
+            db.execute(f"ALTER TABLE {tabla} ADD COLUMN fecha_aprobacion TEXT")
+            db.commit()
+        except: pass
+        db.execute(f"""UPDATE {tabla}
+            SET estado='aprobado',
+                observacion_presidencia=?,
+                aprobado_por=?,
+                fecha_aprobacion=datetime('now')
+            WHERE informe_id=?""", (obs, aprobado_por, inf_id))
+        db.commit()
+    nombre = HOJAS_INFO[hoja_key][2]
+    flash(f'Hoja "{nombre}" aprobada. El asesor ya no puede editarla.', 'success')
+    return redirect(url_for('admin_ver_informe', inf_id=inf_id))
+
+@app.route('/admin/devolver/<int:inf_id>/<hoja_key>', methods=['POST'])
+@login_required
+@admin_required
+def admin_devolver_hoja(inf_id, hoja_key):
+    tabla = HOJAS_INFO.get(hoja_key, [None])[0]
+    if not tabla:
+        flash('Hoja no válida.', 'error')
+        return redirect(url_for('admin_ver_informe', inf_id=inf_id))
+    obs = request.form.get('observacion', '')
+    with get_db() as db:
+        try:
+            db.execute(f"ALTER TABLE {tabla} ADD COLUMN observacion_presidencia TEXT")
+            db.commit()
+        except: pass
+        db.execute(f"""UPDATE {tabla}
+            SET estado='devuelto',
+                observacion_presidencia=?
+            WHERE informe_id=?""", (obs, inf_id))
+        db.commit()
+    nombre = HOJAS_INFO[hoja_key][2]
+    flash(f'Hoja "{nombre}" devuelta al asesor para corrección.', 'success')
     return redirect(url_for('admin_ver_informe', inf_id=inf_id))
 
 if __name__ == '__main__':

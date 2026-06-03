@@ -33,6 +33,8 @@
     <div class="pill-name">{{ nombre }}</div>
     <div class="pill-badge">
       {% if not hoja %}<span class="badge badge-none" style="font-size:9px">—</span>
+      {% elif hoja.estado == 'aprobado' %}<span class="badge" style="background:#EAF5EA;color:#2E7D32;font-size:9px">✅</span>
+      {% elif hoja.estado == 'devuelto' %}<span class="badge" style="background:#FFF8E1;color:#E65100;font-size:9px">↩</span>
       {% elif hoja.estado == 'enviado' %}<span class="badge badge-ok" style="font-size:9px">✓</span>
       {% elif hoja.estado == 'revisado' %}<span class="badge badge-rev" style="font-size:9px">Rev</span>
       {% else %}<span class="badge badge-draft" style="font-size:9px">Bor</span>{% endif %}
@@ -61,13 +63,25 @@
 {% endmacro %}
 
 {% macro action_bar(hoja) %}
-{% set enviado = hoja and hoja.estado in ['enviado','revisado'] %}
+{% set aprobada = hoja and hoja.estado == 'aprobado' %}
+{% set devuelta = hoja and hoja.estado == 'devuelto' %}
+{% set enviada  = hoja and hoja.estado in ['enviado','revisado'] %}
 <div class="action-bar">
-  {% if enviado %}
-    <div style="font-size:12px;color:var(--ok);display:flex;align-items:center;gap:6px;flex:1">
-      ✓ Enviada {% if hoja.fecha_envio %}· {{ hoja.fecha_envio[:10] }}{% endif %}
+  {% if aprobada %}
+    <div style="font-size:12px;color:#2E7D32;display:flex;align-items:center;gap:6px;flex:1">
+      ✅ Aprobada por la presidencia — no se puede editar
     </div>
-    <button type="submit" name="enviar" value="0" class="btn btn-outline" style="flex:0 0 auto">Editar</button>
+  {% elif devuelta %}
+    <div style="font-size:12px;color:#E65100;flex:1;line-height:1.4">
+      ↩ Devuelta para corrección{% if hoja.observacion_presidencia %}: {{ hoja.observacion_presidencia }}{% endif %}
+    </div>
+    <button type="submit" name="enviar" value="0" class="btn btn-outline" style="flex:0 0 auto">Guardar</button>
+    <button type="submit" name="enviar" value="1" class="btn btn-primary" style="flex:0 0 auto"
+      onclick="return confirm('¿Reenviar esta hoja corregida a la presidencia?')">Reenviar ✓</button>
+  {% elif enviada %}
+    <div style="font-size:12px;color:var(--ok);display:flex;align-items:center;gap:6px;flex:1">
+      ✓ Enviada {% if hoja.fecha_envio %}· {{ hoja.fecha_envio[:10] }}{% endif %} — en espera de revisión
+    </div>
   {% else %}
     <button type="submit" name="enviar" value="0" class="btn btn-outline">Guardar</button>
     <button type="submit" name="enviar" value="1" class="btn btn-primary"
@@ -78,7 +92,7 @@
 
 <!-- ══ HOJA 1 ══ -->
 <div id="hoja-cuorum" class="hoja-pane active-pane">
-{% set h = hojas.cuorum %}{% set ro = h and h.estado=='revisado' %}
+{% set h = hojas.cuorum %}{% set ro = h and h.estado in ['revisado','aprobado','enviado'] %}
 <div class="card accent-navy">
   <div class="card-header" style="background:var(--navy-lt)">
     <strong style="color:var(--navy)">Cuórum de élderes</strong>
@@ -125,7 +139,7 @@
 
 <!-- ══ HOJA 2 ══ -->
 <div id="hoja-ministracion" class="hoja-pane">
-{% set h = hojas.ministracion %}{% set ro = h and h.estado=='revisado' %}
+{% set h = hojas.ministracion %}{% set ro = h and h.estado in ['revisado','aprobado','enviado'] %}
 <div class="card accent-olive">
   <div class="card-header" style="background:var(--olive-lt)">
     <strong style="color:var(--olive)">Ministración en el barrio</strong>
@@ -170,7 +184,7 @@
 
 <!-- ══ HOJA 3 ══ -->
 <div id="hoja-misional" class="hoja-pane">
-{% set h = hojas.misional %}{% set ro = h and h.estado=='revisado' %}
+{% set h = hojas.misional %}{% set ro = h and h.estado in ['revisado','aprobado','enviado'] %}
 <div class="card accent-rust">
   <div class="card-header" style="background:var(--rust-lt)">
     <strong style="color:var(--rust)">Obra misional y nuevos miembros</strong>
@@ -216,7 +230,7 @@
 
 <!-- ══ HOJA 4 ══ -->
 <div id="hoja-templo" class="hoja-pane">
-{% set h = hojas.templo %}{% set ro = h and h.estado=='revisado' %}
+{% set h = hojas.templo %}{% set ro = h and h.estado in ['revisado','aprobado','enviado'] %}
 <div class="card accent-amber">
   <div class="card-header" style="background:var(--amber-lt)">
     <strong style="color:var(--amber)">Templo e historia familiar</strong>
@@ -262,7 +276,7 @@
 
 <!-- ══ HOJA 5 ══ -->
 <div id="hoja-general" class="hoja-pane">
-{% set h = hojas.general %}{% set ro = h and h.estado=='revisado' %}
+{% set h = hojas.general %}{% set ro = h and h.estado in ['revisado','aprobado','enviado'] %}
 <div class="card accent-purple">
   <div class="card-header" style="background:var(--purple-lt)">
     <strong style="color:var(--purple)">Estado general del barrio</strong>

@@ -53,24 +53,77 @@
 
 {% macro observacion_form(hoja_key, hoja) %}
 <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-lt)">
-  {% if hoja and hoja.estado in ['enviado','revisado'] %}
-  <form method="POST" action="{{ url_for('admin_observacion', inf_id=inf.id, hoja_key=hoja_key) }}">
-    <div class="form-group">
-      <label>Observación de la presidencia</label>
-      <textarea name="observacion" placeholder="Escribe tu retroalimentación para el asesor…">{{ hoja.observacion_presidencia or '' }}</textarea>
+
+  {% if hoja and hoja.estado == 'aprobado' %}
+  <!-- APROBADA: solo lectura, mostrar quién aprobó -->
+  <div style="background:#EAF5EA;border:1px solid #90C890;border-radius:var(--r);padding:12px 16px;display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">✅</span>
+    <div>
+      <div style="font-size:13px;font-weight:600;color:#2E7D32">Hoja aprobada</div>
+      <div style="font-size:12px;color:#4CAF50">Por {{ hoja.aprobado_por }} {% if hoja.fecha_aprobacion %}· {{ hoja.fecha_aprobacion[:10] }}{% endif %}</div>
+      {% if hoja.observacion_presidencia %}
+      <div style="font-size:12px;color:var(--text-soft);margin-top:4px">"{{ hoja.observacion_presidencia }}"</div>
+      {% endif %}
     </div>
-    <button type="submit" class="btn btn-primary btn-block">Guardar y marcar como revisada</button>
+  </div>
+
+  {% elif hoja and hoja.estado == 'devuelto' %}
+  <!-- DEVUELTA: mostrar motivo y permitir re-aprobar -->
+  <div style="background:#FFF8E1;border:1px solid #F9A825;border-radius:var(--r);padding:12px 16px;margin-bottom:12px">
+    <div style="font-size:13px;font-weight:600;color:#E65100">↩ Hoja devuelta al asesor para corrección</div>
+    {% if hoja.observacion_presidencia %}
+    <div style="font-size:12px;color:var(--text-soft);margin-top:4px">Motivo: {{ hoja.observacion_presidencia }}</div>
+    {% endif %}
+  </div>
+  <form method="POST" action="{{ url_for('admin_aprobar_hoja', inf_id=inf.id, hoja_key=hoja_key) }}">
+    <div class="form-group">
+      <label>Observación (opcional)</label>
+      <textarea name="observacion" placeholder="Comentario adicional…" style="min-height:60px"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary btn-block"
+      onclick="return confirm('¿Aprobar esta hoja? El asesor no podrá editarla.')">
+      ✅ Aprobar hoja
+    </button>
+  </form>
+
+  {% elif hoja and hoja.estado in ['enviado','revisado'] %}
+  <!-- ENVIADA: puede aprobar o devolver -->
+  <form method="POST" action="{{ url_for('admin_aprobar_hoja', inf_id=inf.id, hoja_key=hoja_key) }}">
+    <div class="form-group">
+      <label>Observación de la presidencia (opcional)</label>
+      <textarea name="observacion" placeholder="Escribe un comentario para el asesor…" style="min-height:70px">{{ hoja.observacion_presidencia or '' }}</textarea>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button type="submit" class="btn btn-primary" style="flex:1"
+        onclick="return confirm('¿Aprobar esta hoja? El asesor no podrá editarla.')">
+        ✅ Aprobar hoja
+      </button>
+    </div>
+  </form>
+  <form method="POST" action="{{ url_for('admin_devolver_hoja', inf_id=inf.id, hoja_key=hoja_key) }}"
+    style="margin-top:10px">
+    <div class="form-group">
+      <label>Motivo de devolución</label>
+      <textarea name="observacion" placeholder="Indica al asesor qué debe corregir…" style="min-height:60px" required></textarea>
+    </div>
+    <button type="submit" class="btn btn-block" style="background:#FFF8E1;border:1.5px solid var(--warn);color:#E65100"
+      onclick="return confirm('¿Devolver esta hoja al asesor para que la corrija?')">
+      ↩ Devolver para corrección
+    </button>
   </form>
   {% endif %}
-  {% if hoja %}
+
+  <!-- Resetear siempre disponible si no está aprobada -->
+  {% if hoja and hoja.estado != 'aprobado' %}
   <form method="POST" action="{{ url_for('admin_resetear_hoja', inf_id=inf.id, hoja_key=hoja_key) }}"
-    onsubmit="return confirm('¿Eliminar esta hoja para que el asesor pueda volver a diligenciarla?')"
+    onsubmit="return confirm('¿Eliminar esta hoja para que el asesor la diligencia de nuevo?')"
     style="margin-top:10px">
     <button type="submit" class="btn btn-block" style="background:#FFF0F0;border:1.5px solid var(--danger);color:var(--danger);font-size:13px">
       🗑 Eliminar hoja y habilitar para rediligenciar
     </button>
   </form>
   {% endif %}
+
 </div>
 {% endmacro %}
 
@@ -82,6 +135,8 @@
       {% set h = hojas.cuorum %}
       {% if not h %}<span class="badge badge-none">Sin completar</span>
       {% elif h.estado=='enviado' %}<span class="badge badge-ok">✓ Enviada</span>
+      {% elif h.estado=='aprobado' %}<span class="badge" style="background:#EAF5EA;color:#2E7D32">✅ Aprobada</span>
+      {% elif h.estado=='devuelto' %}<span class="badge" style="background:#FFF8E1;color:#E65100">↩ Devuelta</span>
       {% elif h.estado=='revisado' %}<span class="badge badge-rev">Revisada</span>
       {% else %}<span class="badge badge-draft">Borrador</span>{% endif %}
     </span>
@@ -129,6 +184,8 @@
       {% set h = hojas.ministracion %}
       {% if not h %}<span class="badge badge-none">Sin completar</span>
       {% elif h.estado=='enviado' %}<span class="badge badge-ok">✓ Enviada</span>
+      {% elif h.estado=='aprobado' %}<span class="badge" style="background:#EAF5EA;color:#2E7D32">✅ Aprobada</span>
+      {% elif h.estado=='devuelto' %}<span class="badge" style="background:#FFF8E1;color:#E65100">↩ Devuelta</span>
       {% elif h.estado=='revisado' %}<span class="badge badge-rev">Revisada</span>
       {% else %}<span class="badge badge-draft">Borrador</span>{% endif %}
     </span>
@@ -174,6 +231,8 @@
       {% set h = hojas.misional %}
       {% if not h %}<span class="badge badge-none">Sin completar</span>
       {% elif h.estado=='enviado' %}<span class="badge badge-ok">✓ Enviada</span>
+      {% elif h.estado=='aprobado' %}<span class="badge" style="background:#EAF5EA;color:#2E7D32">✅ Aprobada</span>
+      {% elif h.estado=='devuelto' %}<span class="badge" style="background:#FFF8E1;color:#E65100">↩ Devuelta</span>
       {% elif h.estado=='revisado' %}<span class="badge badge-rev">Revisada</span>
       {% else %}<span class="badge badge-draft">Borrador</span>{% endif %}
     </span>
@@ -220,6 +279,8 @@
       {% set h = hojas.templo %}
       {% if not h %}<span class="badge badge-none">Sin completar</span>
       {% elif h.estado=='enviado' %}<span class="badge badge-ok">✓ Enviada</span>
+      {% elif h.estado=='aprobado' %}<span class="badge" style="background:#EAF5EA;color:#2E7D32">✅ Aprobada</span>
+      {% elif h.estado=='devuelto' %}<span class="badge" style="background:#FFF8E1;color:#E65100">↩ Devuelta</span>
       {% elif h.estado=='revisado' %}<span class="badge badge-rev">Revisada</span>
       {% else %}<span class="badge badge-draft">Borrador</span>{% endif %}
     </span>
@@ -266,6 +327,8 @@
       {% set h = hojas.general %}
       {% if not h %}<span class="badge badge-none">Sin completar</span>
       {% elif h.estado=='enviado' %}<span class="badge badge-ok">✓ Enviada</span>
+      {% elif h.estado=='aprobado' %}<span class="badge" style="background:#EAF5EA;color:#2E7D32">✅ Aprobada</span>
+      {% elif h.estado=='devuelto' %}<span class="badge" style="background:#FFF8E1;color:#E65100">↩ Devuelta</span>
       {% elif h.estado=='revisado' %}<span class="badge badge-rev">Revisada</span>
       {% else %}<span class="badge badge-draft">Borrador</span>{% endif %}
     </span>

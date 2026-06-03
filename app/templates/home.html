@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0d1f33">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Estaca Bucaramanga">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/static/icon-192.png">
+<title>Estaca Bucaramanga</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&family=DM+Sans:wght@400;500;600&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow-x:hidden}
+
+:root{
+  --navy:#1A3A5C;
+  --navy-dk:#0d1f33;
+  --gold:#C9A84C;
+  --gold-lt:rgba(201,168,76,.15);
+  --white:#fff;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--navy-dk);
+  color:var(--white);
+  min-height:100vh;
+  padding-bottom:calc(24px + var(--safe-bottom));
+}
+
+/* ── FONDO ── */
+.bg{position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(201,168,76,.18) 0%, transparent 60%),
+    linear-gradient(180deg,#0d1f33 0%,#1a3a5c 60%,#0d1f33 100%);
+}
+.bg-dots{
+  position:fixed;inset:0;z-index:0;
+  background-image:radial-gradient(rgba(255,255,255,.06) 1px,transparent 1px);
+  background-size:28px 28px;
+}
+
+/* ── LAYOUT ── */
+.wrap{position:relative;z-index:1;max-width:480px;margin:0 auto;padding:0 16px}
+
+/* ── HEADER ── */
+.header{
+  padding:calc(28px + var(--safe-top)) 0 24px;
+  text-align:center;
+}
+.header-emblem{
+  width:72px;height:72px;border-radius:22px;
+  background:linear-gradient(135deg,rgba(201,168,76,.2),rgba(26,58,92,.6));
+  border:1.5px solid rgba(201,168,76,.35);
+  display:flex;align-items:center;justify-content:center;
+  font-size:34px;margin:0 auto 16px;
+  box-shadow:0 8px 32px rgba(0,0,0,.3),0 0 0 6px rgba(201,168,76,.06);
+}
+.header-church{
+  font-size:10px;font-weight:600;letter-spacing:2.5px;
+  text-transform:uppercase;color:var(--gold);
+  opacity:.8;margin-bottom:8px;
+  padding:0 12px;line-height:1.5;
+}
+.header-title{
+  font-family:'Crimson Pro',serif;
+  font-size:32px;font-weight:300;
+  color:var(--white);line-height:1.15;
+}
+.header-title b{font-weight:600;color:var(--gold)}
+.header-sub{
+  margin-top:6px;font-size:12.5px;
+  color:rgba(255,255,255,.35);letter-spacing:.3px;
+}
+.header-divider{
+  width:40px;height:1.5px;margin:18px auto 0;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+}
+
+/* ── SECTION LABEL ── */
+.section-lbl{
+  font-size:10px;font-weight:600;letter-spacing:2.5px;
+  text-transform:uppercase;color:rgba(255,255,255,.28);
+  text-align:center;padding:22px 0 12px;
+}
+
+/* ── TARJETA GRANDE (Sumo Consejo) ── */
+.card-featured{
+  display:flex;align-items:center;gap:16px;
+  padding:18px 18px;
+  background:linear-gradient(135deg,rgba(201,168,76,.14),rgba(26,58,92,.7));
+  border:1.5px solid rgba(201,168,76,.3);
+  border-radius:20px;
+  text-decoration:none;
+  margin-bottom:12px;
+  box-shadow:0 8px 28px rgba(0,0,0,.25),0 0 0 1px rgba(201,168,76,.1);
+  transition:transform .15s,box-shadow .15s;
+  position:relative;
+  overflow:hidden;
+}
+.card-featured::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.07) 0%,transparent 50%);
+  pointer-events:none;
+}
+.card-featured:active{transform:scale(.98);box-shadow:0 4px 14px rgba(0,0,0,.3)}
+
+.feat-icon{
+  width:56px;height:56px;border-radius:16px;flex-shrink:0;
+  background:rgba(201,168,76,.15);border:1.5px solid rgba(201,168,76,.25);
+  display:flex;align-items:center;justify-content:center;font-size:28px;
+}
+.feat-text{flex:1;min-width:0}
+.feat-name{
+  font-family:'Crimson Pro',serif;font-size:20px;font-weight:600;
+  color:var(--white);line-height:1.2;
+}
+.feat-desc{font-size:12px;color:rgba(255,255,255,.45);margin-top:3px;line-height:1.4}
+.feat-badge{
+  font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;
+  padding:3px 9px;border-radius:20px;margin-top:7px;display:inline-block;
+  background:rgba(76,175,80,.18);color:#81C784;border:1px solid rgba(76,175,80,.25);
+}
+.feat-arrow{font-size:22px;color:rgba(201,168,76,.6);flex-shrink:0;font-weight:300}
+
+/* ── GRID 2 COLUMNAS ── */
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+/* ── TARJETA PEQUEÑA ── */
+.card{
+  position:relative;
+  border-radius:18px;
+  padding:18px 12px 14px;
+  display:flex;flex-direction:column;
+  align-items:center;gap:8px;
+  text-decoration:none;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.07);
+  overflow:hidden;
+  transition:transform .15s;
+}
+.card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.05) 0%,transparent 55%);
+  pointer-events:none;
+}
+.card:active{transform:scale(.97)}
+
+.card.disabled{opacity:.32;pointer-events:none;filter:grayscale(.3)}
+
+.card-icon{
+  width:46px;height:46px;border-radius:13px;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09);
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+}
+.card-name{
+  font-family:'Crimson Pro',serif;font-size:15px;font-weight:600;
+  color:var(--white);text-align:center;line-height:1.25;
+}
+.card-desc{font-size:10.5px;color:rgba(255,255,255,.32);text-align:center;line-height:1.35}
+.card-badge{
+  position:absolute;top:9px;right:10px;
+  font-size:8.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  padding:2px 7px;border-radius:20px;
+  background:rgba(255,255,255,.05);color:rgba(255,255,255,.25);
+  border:1px solid rgba(255,255,255,.07);
+}
+
+/* ── FOOTER ── */
+.footer{
+  text-align:center;padding:28px 0 8px;
+}
+.footer-sym{font-size:16px;color:rgba(201,168,76,.22);display:block;margin-bottom:5px}
+.footer-txt{font-size:11px;color:rgba(255,255,255,.15);letter-spacing:.4px}
+
+/* DESKTOP */
+@media(min-width:520px){
+  .header-title{font-size:38px}
+  .header-emblem{width:80px;height:80px;font-size:38px}
+  .grid{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="bg-dots"></div>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-emblem">⬡</div>
+    <div class="header-church">La Iglesia de Jesucristo<br>de los Santos de los Últimos Días</div>
+    <h1 class="header-title">Estaca <b>Bucaramanga</b></h1>
+    <div class="header-sub">Portal de organizaciones</div>
+    <div class="header-divider"></div>
+  </header>
+
+  <div class="section-lbl">Selecciona una organización</div>
+
+  <!-- SUMO CONSEJO — DESTACADO -->
+  <a href="/sumoconsejo" class="card-featured">
+    <div class="feat-icon">⬡</div>
+    <div class="feat-text">
+      <div class="feat-name">Sumo Consejo</div>
+      <div class="feat-desc">Sistema de informes de asesores</div>
+      <span class="feat-badge">● Activo</span>
+    </div>
+    <div class="feat-arrow">›</div>
+  </a>
+
+  <!-- GRID ORGANIZACIONES -->
+  <div class="grid">
+
+    <div class="card disabled">
+      <span class="card-badge">Próximo</span>
+      <div class="card-icon">🌿</div>
+      <div class="card-name">Sociedad de Socorro</div>
+      <div class="card-desc">Caridad nunca deja de ser</div>
+    </div>
+
+    <div class="card disabled">
+      <span class="card-badge">Próximo</span>
+      <div class="card-icon">🏔</div>
+      <div class="card-name">Hombres Jóvenes</div>
+      <div class="card-desc">Sacerdocio Aarónico</div>
+    </div>
+
+    <div class="card disabled">
+      <span class="card-badge">Próximo</span>
+      <div class="card-icon">✨</div>
+      <div class="card-name">Mujeres Jóvenes</div>
+      <div class="card-desc">Valor personal y divino</div>
+    </div>
+
+    <div class="card disabled">
+      <span class="card-badge">Próximo</span>
+      <div class="card-icon">🌟</div>
+      <div class="card-name">Primaria</div>
+      <div class="card-desc">Niños de la estaca</div>
+    </div>
+
+    <div class="card disabled">
+      <span class="card-badge">Próximo</span>
+      <div class="card-icon">🤝</div>
+      <div class="card-name">JAS</div>
+      <div class="card-desc">Jóvenes Adultos Solteros</div>
+    </div>
+
+    <div class="card disabled">
+      <span class="card-badge">Próximo</span>
+      <div class="card-icon">📖</div>
+      <div class="card-name">Escuela Dominical</div>
+      <div class="card-desc">Enseñanza del Evangelio</div>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <span class="footer-sym">✦</span>
+    <div class="footer-txt">Estaca Bucaramanga · {{ now.year }}</div>
+  </footer>
+
+</div>
+</body>
+</html>
