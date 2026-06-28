@@ -190,6 +190,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     {% else %}
     <a class="topnav-link" href="{{ url_for('dashboard') }}">Mis informes</a>
     {% endif %}
+    <a class="topnav-link" href="{{ url_for('cambiar_password') }}">Mi cuenta</a>
     <a class="topnav-link" href="{{ url_for('logout') }}">Salir</a>
   </div>
   <div class="topnav-user">{{ session.nombre }}</div>
@@ -223,6 +224,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     Informe
   </a>
   {% endif %}
+  <a class="bnav-item {% if request.endpoint == 'cambiar_password' %}active{% endif %}" href="{{ url_for('cambiar_password') }}">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>
+    Cuenta
+  </a>
   <a class="bnav-item" href="{{ url_for('logout') }}">
     <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
     Salir

@@ -302,6 +302,30 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
+@app.route('/cambiar-password', methods=['GET','POST'])
+@login_required
+def cambiar_password():
+    if request.method == 'POST':
+        actual = request.form.get('actual','')
+        nueva  = request.form.get('nueva','')
+        confirmar = request.form.get('confirmar','')
+        with get_db() as db:
+            u = db.execute("SELECT * FROM usuario WHERE id=?", (session['user_id'],)).fetchone()
+        if not u or not check_password_hash(u['password_hash'], actual):
+            flash('La contraseña actual es incorrecta.', 'error')
+        elif len(nueva) < 6:
+            flash('La nueva contraseña debe tener al menos 6 caracteres.', 'error')
+        elif nueva != confirmar:
+            flash('Las contraseñas no coinciden.', 'error')
+        else:
+            with get_db() as db:
+                db.execute("UPDATE usuario SET password_hash=? WHERE id=?",
+                    (generate_password_hash(nueva), session['user_id']))
+                db.commit()
+            flash('Contraseña actualizada correctamente.', 'success')
+            return redirect(url_for('dashboard'))
+    return render_template('cambiar_password.html')
+
 @app.route('/sumoconsejo/dashboard')
 @app.route('/dashboard')
 @login_required
