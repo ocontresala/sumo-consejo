@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devocional Multi Estacas – Envía tu Pregunta</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lora:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --gold-light: #D4AF37;
+            --gold-mid:   #C9A227;
+            --gold-dark:  #8B6914;
+            --navy:       #1a2a5e;
+            --navy-light: #2c3e7a;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: 'Lora', serif;
+            background: linear-gradient(160deg,
+                rgba(180,210,240,0.92) 0%,
+                rgba(230,210,170,0.88) 35%,
+                rgba(245,230,190,0.85) 55%,
+                rgba(200,220,155,0.90) 100%
+            );
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(255,220,80,0.3) 0%, transparent 65%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .gold-frame {
+            position: fixed;
+            inset: 6px;
+            border: 2px solid transparent;
+            border-image: linear-gradient(135deg, #f0d060, #8b6914, #c9a227, #f0d060, #8b6914, #c9a227, #f0d060) 1;
+            pointer-events: none;
+            z-index: 999;
+        }
+        .gold-frame::before {
+            content: '';
+            position: absolute;
+            inset: 4px;
+            border: 1px solid rgba(201,162,39,0.25);
+        }
+
+        .corner {
+            position: fixed;
+            width: 28px;
+            height: 28px;
+            z-index: 1000;
+            pointer-events: none;
+        }
+        .corner::before, .corner::after {
+            content: '';
+            position: absolute;
+            background: var(--gold-mid);
+        }
+        .corner-tl { top: 4px; left: 4px; }
+        .corner-tr { top: 4px; right: 4px; transform: scaleX(-1); }
+        .corner-bl { bottom: 4px; left: 4px; transform: scaleY(-1); }
+        .corner-br { bottom: 4px; right: 4px; transform: scale(-1); }
+        .corner::before { width: 14px; height: 2px; top: 0; left: 0; }
+        .corner::after  { width: 2px; height: 14px; top: 0; left: 0; }
+
+        .jesus-img { display: none; }
+
+        .page {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 16px 32px;
+            gap: 14px;
+        }
+
+        .header { text-align: center; animation: fadeDown 0.7s ease both; width: 100%; }
+
+        .header .overline {
+            font-family: 'Cinzel', serif;
+            font-size: 0.62rem;
+            letter-spacing: 4px;
+            color: var(--gold-dark);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .header h1 {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(0.95rem, 4.5vw, 1.8rem);
+            color: var(--gold-light);
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            line-height: 1.2;
+            margin-bottom: 3px;
+        }
+
+        .header h2 {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(0.75rem, 3vw, 1rem);
+            color: var(--navy);
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .elder-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .elder-photo {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: 2px solid var(--gold-mid);
+            box-shadow: 0 0 0 3px rgba(201,162,39,0.2), 0 4px 14px rgba(0,0,0,0.18);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .elder-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center top;
+        }
+
+        .elder-info { text-align: left; }
+        .elder-info strong {
+            display: block;
+            font-family: 'Lora', serif;
+            font-style: italic;
+            font-size: 0.9rem;
+            color: var(--navy);
+        }
+        .elder-info span { font-size: 0.75rem; color: var(--navy-light); opacity: 0.8; }
+
+        .divider {
+            width: 180px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.75;
+            margin: 0 auto;
+        }
+        .divider span { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-mid), transparent); }
+        .divider i { color: var(--gold-mid); font-size: 0.65rem; }
+
+        .event-pills {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            animation: fadeUp 0.7s 0.15s ease both;
+            width: 100%;
+        }
+
+        .pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: rgba(255,248,220,0.78);
+            border: 1px solid rgba(201,162,39,0.3);
+            border-radius: 30px;
+            backdrop-filter: blur(6px);
+            font-size: 0.78rem;
+            color: var(--navy);
+        }
+
+        .pill svg {
+            width: 13px;
+            height: 13px;
+            stroke: var(--gold-dark);
+            fill: none;
+            stroke-width: 1.8;
+            flex-shrink: 0;
+        }
+
+        .pill-address {
+            flex-direction: column;
+            align-items: flex-start;
+            border-radius: 12px;
+            padding: 8px 14px;
+            gap: 2px;
+        }
+        .pill-address .pill-header { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+        .pill-address .pill-line { font-size: 0.73rem; opacity: 0.8; padding-left: 19px; }
+
+        .message-card {
+            width: 100%;
+            max-width: 520px;
+            background: rgba(255,250,230,0.84);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(201,162,39,0.28);
+            border-radius: 14px;
+            padding: 14px 20px;
+            text-align: center;
+            animation: fadeUp 0.7s 0.25s ease both;
+        }
+        .message-card p { font-size: 0.88rem; color: var(--navy); line-height: 1.75; }
+        .message-card p strong { color: var(--gold-dark); }
+
+        .form-card {
+            width: 100%;
+            max-width: 520px;
+            background: rgba(255,250,230,0.92);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(201,162,39,0.32);
+            border-radius: 16px;
+            padding: 20px 20px 22px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+            animation: fadeUp 0.7s 0.35s ease both;
+        }
+
+        .form-title {
+            font-family: 'Cinzel', serif;
+            font-size: 0.9rem;
+            color: var(--gold-mid);
+            text-align: center;
+            letter-spacing: 2px;
+            margin-bottom: 18px;
+        }
+
+        .form-group { margin-bottom: 14px; }
+
+        .form-group label {
+            display: block;
+            font-size: 0.78rem;
+            color: var(--navy-light);
+            font-style: italic;
+            margin-bottom: 5px;
+        }
+
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid rgba(201,162,39,0.32);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.65);
+            font-family: 'Lora', serif;
+            font-size: 0.92rem;
+            color: var(--navy);
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+        }
+
+        .form-group textarea::placeholder { color: rgba(26,42,94,0.38); font-style: italic; }
+
+        .form-group textarea:focus,
+        .form-group select:focus {
+            border-color: var(--gold-mid);
+            background: rgba(255,255,255,0.9);
+            box-shadow: 0 0 0 3px rgba(201,162,39,0.13);
+        }
+
+        .form-group textarea { min-height: 110px; resize: vertical; line-height: 1.65; }
+
+        .select-wrap { position: relative; }
+        .select-wrap::after {
+            content: '▾';
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gold-dark);
+            pointer-events: none;
+            font-size: 0.85rem;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, var(--gold-light), var(--gold-dark));
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Cinzel', serif;
+            font-size: 0.88rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 0 4px 18px rgba(139,105,20,0.38);
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 4px;
+        }
+        .btn-submit:active { transform: scale(0.98); }
+        .btn-submit:disabled { opacity: 0.7; cursor: wait; }
+
+        .scripture {
+            text-align: center;
+            max-width: 480px;
+            animation: fadeUp 0.7s 0.5s ease both;
+            padding-bottom: 8px;
+        }
+        .scripture blockquote {
+            font-style: italic;
+            color: var(--navy);
+            font-size: 0.78rem;
+            line-height: 1.85;
+            opacity: 0.82;
+        }
+        .scripture cite {
+            display: block;
+            margin-top: 6px;
+            font-family: 'Cinzel', serif;
+            font-size: 0.7rem;
+            color: var(--gold-dark);
+            font-style: normal;
+            letter-spacing: 2px;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(10,20,50,0.55);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.show { display: flex; animation: fadeIn 0.25s ease; }
+
+        .modal-box {
+            background: rgba(255,250,225,0.97);
+            border: 2px solid rgba(201,162,39,0.5);
+            border-radius: 18px;
+            padding: 32px 28px 26px;
+            max-width: 340px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.22);
+            animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        .modal-icon { font-size: 2.4rem; color: var(--gold-mid); margin-bottom: 12px; display: block; }
+        .modal-box h4 {
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            color: var(--navy);
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+        .modal-box p { font-size: 0.9rem; color: var(--navy-light); line-height: 1.7; }
+        .btn-modal-close {
+            margin-top: 20px;
+            padding: 11px 32px;
+            background: linear-gradient(135deg, var(--gold-light), var(--gold-dark));
+            border: none;
+            border-radius: 8px;
+            font-family: 'Cinzel', serif;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(139,105,20,0.32);
+        }
+
+        @keyframes fadeDown { from { opacity:0; transform:translateY(-14px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes fadeUp   { from { opacity:0; transform:translateY(14px);  } to { opacity:1; transform:translateY(0); } }
+        @keyframes fadeIn   { from { opacity:0; } to { opacity:1; } }
+        @keyframes popIn    { from { opacity:0; transform:scale(0.82); } to { opacity:1; transform:scale(1); } }
+
+        @media (min-width: 768px) {
+            .page {
+                margin-right: clamp(200px, 26vw, 360px);
+                padding: 36px 24px;
+                align-items: center;
+                gap: 18px;
+            }
+            .header { text-align: center; }
+            .header h1   { font-size: clamp(1.3rem, 2.8vw, 2rem); white-space: nowrap; }
+            .elder-photo { width: 82px; height: 82px; }
+            .form-card, .message-card { max-width: 580px; width: 100%; }
+            .form-card    { padding: 28px 32px; }
+            .message-card { padding: 16px 28px; }
+            .btn-submit   { font-size: 0.95rem; padding: 14px; }
+
+            .jesus-img {
+                display: block;
+                position: fixed;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                width: clamp(200px, 26vw, 360px);
+                pointer-events: none;
+                z-index: 2;
+            }
+            .jesus-img img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                object-position: center top;
+                -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,0.92) 45%, transparent 100%);
+                mask-image: linear-gradient(to left, rgba(0,0,0,0.92) 45%, transparent 100%);
+                opacity: 0.95;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-box">
+            <span class="modal-icon">✦</span>
+            <h4>¡Gracias!</h4>
+            <p>Tu pregunta fue registrada exitosamente.<br>Nos vemos el <strong>11 de julio</strong>.</p>
+            <button class="btn-modal-close" onclick="closeModal()">Aceptar</button>
+        </div>
+    </div>
+
+    <div class="gold-frame"></div>
+    <div class="corner corner-tl"></div>
+    <div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div>
+    <div class="corner corner-br"></div>
+
+    <div class="jesus-img">
+        <img src="{{ url_for('static', filename='Jesucristo.jpg') }}" alt="Jesucristo">
+    </div>
+
+    <div class="page">
+
+        <header class="header">
+            <p class="overline">Devocional Multi Estacas</p>
+            <h1>Bucaramanga &nbsp;·&nbsp; Bucaramanga Terrazas</h1>
+            <h2>11 de julio de 2026</h2>
+            <div class="elder-row">
+                <div class="elder-photo">
+                    <img src="{{ url_for('static', filename='elder.jpg') }}" alt="Elder Sergio Villa">
+                </div>
+                <div class="elder-info">
+                    <strong>Elder Sergio Villa</strong>
+                    <span>Setenta de Área</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="divider"><span></span><i>✦</i><span></span></div>
+
+        <div class="event-pills">
+            <div class="pill">
+                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
+                5:00 pm – 7:00 pm
+            </div>
+            <div class="pill">
+                <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Adultos 18–35 años
+            </div>
+            <div class="pill pill-address">
+                <div class="pill-header">
+                    <svg viewBox="0 0 24 24"><path d="M21 10c0 6-9 13-9 13S3 16 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <strong>Capilla Diamante</strong>
+                </div>
+                <span class="pill-line">Transversal 26 # 88-150 Asturias II</span>
+                <span class="pill-line">Diagonal al puente de Provenza</span>
+            </div>
+        </div>
+
+        <div class="message-card">
+            <p>
+                En preparación para este devocional, te invitamos a registrar las preguntas que consideres importantes y que nos puedan <strong>edificar espiritualmente</strong>.
+            </p>
+        </div>
+
+        <div class="form-card">
+            <p class="form-title">✦ &nbsp; Envía tu Pregunta &nbsp; ✦</p>
+            <form id="form">
+                <div class="form-group">
+                    <label>Estaca</label>
+                    <div class="select-wrap">
+                        <select name="estaca" required>
+                            <option value="" disabled selected>Selecciona tu estaca</option>
+                            <option value="Bucaramanga">Bucaramanga</option>
+                            <option value="Bucaramanga Terrazas">Bucaramanga Terrazas</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Tu pregunta *</label>
+                    <textarea name="pregunta" placeholder="Escribe aquí tu pregunta para el Elder Sergio Villa…" required></textarea>
+                </div>
+                <button type="submit" class="btn-submit" id="submitBtn">Enviar Pregunta</button>
+            </form>
+        </div>
+
+        <div class="scripture">
+            <div class="divider" style="margin: 0 auto 10px;"><span></span><i>✦</i><span></span></div>
+            <blockquote>
+                «…empieza a ensanchar mi alma; sí, empieza a iluminar mi entendimiento; sí, empieza a ser deliciosa para mí.»
+            </blockquote>
+            <cite>Alma 32:28</cite>
+        </div>
+
+    </div>
+
+    <script>
+        const form         = document.getElementById('form');
+        const submitBtn    = document.getElementById('submitBtn');
+        const modalOverlay = document.getElementById('modalOverlay');
+
+        const FORM_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwbY3KRqfwhlBsHFxpfgBD4YB1RGKUg9_4LPfGsVn2qZoiwdMqg5FGVMMXd-PbTf5mR/exec';
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            submitBtn.disabled    = true;
+            submitBtn.textContent = 'Enviando…';
+
+            const data    = new FormData(form);
+            const payload = {};
+            data.forEach((val, key) => payload[key] = val);
+
+            try {
+                await fetch(FORM_ENDPOINT, {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                    mode: 'no-cors'
+                });
+                form.reset();
+                submitBtn.disabled    = false;
+                submitBtn.textContent = 'Enviar Pregunta';
+                modalOverlay.classList.add('show');
+            } catch {
+                alert('Hubo un error de conexión. Por favor intenta nuevamente.');
+                submitBtn.disabled    = false;
+                submitBtn.textContent = 'Enviar Pregunta';
+            }
+        });
+
+        function closeModal() {
+            modalOverlay.classList.remove('show');
+        }
+    </script>
+</body>
+</html>

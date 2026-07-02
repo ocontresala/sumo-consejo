@@ -691,6 +691,10 @@ def admin_devolver_hoja(inf_id, hoja_key):
     flash(f'Hoja "{nombre}" devuelta al asesor para corrección.', 'success')
     return redirect(url_for('admin_ver_informe', inf_id=inf_id))
 
+@app.route('/devocional')
+def devocional():
+    return render_template('devocional.html')
+
 if __name__ == '__main__':
     init_db()
     app.run(host='0.0.0.0', port=5000, debug=False)

@@ -53,14 +53,29 @@ sumo-consejo/
     ├── Dockerfile
     ├── requirements.txt
     ├── app.py             ← Aplicación principal
+    ├── static/
+    │   ├── elder.jpg          ← Foto Elder Sergio Villa
+    │   └── Jesucristo.jpg     ← Imagen decorativa
     └── templates/
         ├── base.html
         ├── login.html
         ├── dashboard.html
         ├── informe.html
         ├── admin.html
-        └── admin_informe.html
+        ├── admin_informe.html
+        └── devocional.html    ← Landing page devocional /devocional
 ```
+
+---
+
+## Páginas públicas
+
+### Landing Devocional — `/devocional`
+Página pública (sin login) para el **Devocional Multi Estacas Bucaramanga – Bucaramanga Terrazas**.
+- Muestra información del evento: fecha, hora, lugar y orador (Elder Sergio Villa)
+- Permite a los asistentes registrar preguntas antes del devocional
+- Las respuestas se guardan en Google Sheets vía Google Apps Script
+- Diseño mobile-first con imagen de Jesucristo decorativa en desktop
 
 ---
 
