@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>FSY 2026 – Anda Conmigo</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --navy:     #1A4F72;
+  --navy-lt:  #2980B9;
+  --green:    #2E8B5F;
+  --green-lt: #3DAA78;
+  --orange:   #E8830A;
+  --bg:       #E8F4F8;
+  --white:    #FFFFFF;
+  --border:   #B8D8E8;
+  --text:     #1C2E3A;
+  --muted:    #4A6A7A;
+}
+
+body {
+  font-family: 'Lora', serif;
+  background: linear-gradient(160deg,
+    rgba(26,79,114,0.08) 0%,
+    rgba(232,244,248,1) 30%,
+    rgba(220,240,232,0.9) 70%,
+    rgba(232,131,10,0.06) 100%
+  );
+  min-height: 100vh;
+  color: var(--text);
+  overflow-x: hidden;
+  padding-bottom: 48px;
+}
+
+/* ── HEADER ── */
+.header {
+  background: #EBF5F6;
+  border-bottom: 3px solid #B8D8E8;
+  padding: 32px 24px 28px;
+}
+
+.header-inner {
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.logo-img {
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.header-text { flex: 1; }
+
+.badge-fsy {
+  display: inline-block;
+  background: rgba(232,131,10,.15);
+  border: 1px solid rgba(232,131,10,.35);
+  border-radius: 30px;
+  padding: 3px 12px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #B36A08;
+  margin-bottom: 8px;
+}
+
+.header-title {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(26px, 7vw, 40px);
+  font-weight: 900;
+  color: var(--navy);
+  line-height: 1.0;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+
+.header-verse {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.header-sub {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ── DIVIDER ── */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 200px;
+  margin: 0 auto 0;
+  opacity: .6;
+}
+.divider span { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--navy), transparent); }
+.divider i { color: var(--navy); font-style: normal; font-size: 13px; }
+
+/* ── PAGE ── */
+.page { max-width: 520px; margin: 0 auto; padding: 28px 16px; }
+
+/* ── CARD ── */
+.card {
+  background: rgba(255,255,255,.88);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px 22px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 20px rgba(26,79,114,.10);
+  animation: fadeUp .55s ease both;
+}
+.card:nth-child(1) { animation-delay: .05s; }
+.card:nth-child(2) { animation-delay: .15s; }
+.card:nth-child(3) { animation-delay: .25s; }
+
+/* ── FORM ── */
+.form-label {
+  display: block;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.q-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.q-icon {
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.q-icon.green  { background: #E0F5EC; }
+.q-icon.orange { background: #FDF0E0; }
+
+.q-title {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--navy);
+  line-height: 1.4;
+}
+.q-hint {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  margin-bottom: 12px;
+}
+
+select, textarea {
+  width: 100%;
+  padding: 13px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-family: 'Lora', serif;
+  font-size: 15px;
+  color: var(--text);
+  background: rgba(232,244,248,.5);
+  outline: none;
+  transition: border-color .18s, box-shadow .18s, background .18s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%231A4F72' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 42px;
+  cursor: pointer;
+  font-weight: 500;
+}
+select:focus, textarea:focus {
+  border-color: var(--navy-lt);
+  background: rgba(255,255,255,.95);
+  box-shadow: 0 0 0 3px rgba(41,128,185,.12);
+}
+textarea {
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.7;
+}
+textarea::placeholder { color: rgba(74,106,122,.45); font-style: italic; }
+
+/* ── SUBMIT ── */
+.btn-submit {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, var(--navy) 0%, var(--green) 100%);
+  color: #fff;
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(26,79,114,.32);
+  transition: opacity .18s, transform .14s;
+  -webkit-tap-highlight-color: transparent;
+  animation: fadeUp .55s .35s ease both;
+}
+.btn-submit:active { opacity: .88; transform: scale(.98); }
+.btn-submit:disabled { opacity: .65; cursor: wait; }
+
+/* ── SCRIPTURE ── */
+.scripture {
+  text-align: center;
+  padding: 8px 0 0;
+  animation: fadeUp .55s .45s ease both;
+}
+.scripture blockquote {
+  font-style: italic;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.8;
+  opacity: .85;
+}
+.scripture cite {
+  display: block;
+  margin-top: 6px;
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  color: var(--navy);
+  letter-spacing: 2px;
+  font-style: normal;
+}
+
+/* ── VALIDACIÓN ── */
+.field-error {
+  display: none;
+  font-size: 12px;
+  color: #C62828;
+  margin-top: 6px;
+  padding: 4px 10px;
+  background: #FDECEC;
+  border: 1px solid #F5AAAA;
+  border-radius: 8px;
+}
+.field-error.show { display: block; }
+select.invalid, textarea.invalid {
+  border-color: #E53935;
+  box-shadow: 0 0 0 3px rgba(229,57,53,.12);
+}
+
+/* ── MODAL ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10,25,45,.6);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.show { display: flex; animation: fadeIn .25s ease; }
+
+.modal-box {
+  background: #EBF5F6;
+  border-radius: 24px;
+  padding: 0;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(0,0,0,.25);
+  animation: popIn .35s cubic-bezier(.34,1.56,.64,1);
+  overflow: hidden;
+}
+.modal-top {
+  background: linear-gradient(150deg, #1A4F72 0%, #1A7A6A 55%, #2E8B5F 100%);
+  padding: 32px 24px 28px;
+  position: relative;
+}
+.modal-top::before {
+  content: '';
+  position: absolute;
+  top: -30px; right: -30px;
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  background: rgba(232,131,10,.2);
+}
+.modal-logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  margin: 0 auto 16px;
+  display: block;
+  mix-blend-mode: luminosity;
+  opacity: .92;
+}
+.modal-title {
+  font-family: 'Cinzel', serif;
+  font-size: 22px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+.modal-verse {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: rgba(255,255,255,.6);
+  text-transform: uppercase;
+}
+.modal-body {
+  padding: 24px 28px 28px;
+}
+.modal-check {
+  width: 52px; height: 52px;
+  background: linear-gradient(135deg, var(--green), var(--navy));
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: -26px auto 16px;
+  box-shadow: 0 4px 14px rgba(26,79,114,.3);
+  font-size: 22px;
+  color: #fff;
+  position: relative;
+  z-index: 1;
+}
+.modal-box h4 {
+  font-family: 'Cinzel', serif;
+  font-size: 18px;
+  color: var(--navy);
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+.modal-box p {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.8;
+  font-style: italic;
+}
+.btn-modal-close {
+  margin-top: 20px;
+  padding: 13px 40px;
+  background: linear-gradient(135deg, var(--navy), var(--green));
+  border: none;
+  border-radius: 12px;
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(26,79,114,.3);
+  transition: opacity .18s;
+}
+.btn-modal-close:active { opacity: .85; }
+
+@keyframes fadeUp  { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeIn  { from { opacity:0; } to { opacity:1; } }
+@keyframes popIn   { from { opacity:0; transform:scale(.82); } to { opacity:1; transform:scale(1); } }
+
+@media (min-width: 520px) {
+  .header { padding: 64px 32px 56px; }
+  .page   { padding: 36px 24px; }
+  .card   { padding: 28px 32px; }
+}
+</style>
+</head>
+<body>
+
+<!-- MODAL DE CONFIRMACIÓN -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-top">
+      <img class="modal-logo" src="{{ url_for('static', filename='fsy_logo.png') }}" alt="FSY 2026">
+      <div class="modal-title">ANDA CONMIGO</div>
+      <div class="modal-verse">Moisés 6:34</div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-check">✓</div>
+      <h4>¡Gracias!</h4>
+      <p>Tu experiencia fue registrada.<br>Que el Señor siempre ande contigo.</p>
+      <button class="btn-modal-close" onclick="closeModal()">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ENCABEZADO -->
+<div class="header">
+  <div class="header-inner">
+    <img class="logo-img" src="{{ url_for('static', filename='fsy_logo.png') }}" alt="FSY 2026 – Anda Conmigo">
+    <div class="header-text">
+      <div class="badge-fsy">FSY 2026 · Estaca Bucaramanga</div>
+      <div class="header-title">ANDA<br>CONMIGO</div>
+      <div class="header-verse">Moisés 6:34</div>
+      <div class="header-sub">Comparte tu experiencia y ayúdanos a crecer juntos</div>
+    </div>
+  </div>
+</div>
+
+<!-- FORMULARIO -->
+<div class="page">
+
+  <div class="card">
+    <label class="form-label">Soy parte de</label>
+    <select id="programa" required>
+      <option value="" disabled selected>Selecciona una opción…</option>
+      <option value="Jóvenes">Jóvenes (14–18 años)</option>
+      <option value="JAS">JAS — Jóvenes Adultos Solteros (18+ años)</option>
+    </select>
+    <div class="field-error" id="err-programa">Escoge tu opción</div>
+  </div>
+
+  <div class="card">
+    <div class="q-header">
+      <div class="q-icon green">✨</div>
+      <div class="q-title">¿Qué te gustó del FSY?</div>
+    </div>
+    <p class="q-hint">Cuéntanos lo que más disfrutaste, lo que te marcó o te hizo feliz.</p>
+    <textarea id="gustos" placeholder="Escribe aquí tu respuesta…"></textarea>
+    <div class="field-error" id="err-gustos">Escribe tu comentario</div>
+  </div>
+
+  <div class="card">
+    <div class="q-header">
+      <div class="q-icon orange">💡</div>
+      <div class="q-title">¿Qué oportunidades de mejora ves para el próximo FSY?</div>
+    </div>
+    <p class="q-hint">Tu opinión nos ayuda a hacer el próximo FSY aún mejor para todos.</p>
+    <textarea id="mejoras" placeholder="Escribe aquí tus sugerencias…"></textarea>
+    <div class="field-error" id="err-mejoras">Escribe tu comentario</div>
+  </div>
+
+  <button class="btn-submit" id="submitBtn" onclick="enviar()">Enviar mi experiencia</button>
+
+  <div class="divider" style="margin-top:28px"><span></span><i>✦</i><span></span></div>
+  <div class="scripture">
+    <blockquote>
+      «…camina conmigo.»
+    </blockquote>
+    <cite>Moisés 6:34</cite>
+  </div>
+
+</div>
+
+<script>
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbxn3mWdu_NjRdXwfvgYCj94oaXdY_NHZMwS1NVefcTFUvy3mB24th2wCUWUj3Tmy8JJ/exec';
+
+function mostrarError(id, inputId) {
+  document.getElementById(id).classList.add('show');
+  document.getElementById(inputId).classList.add('invalid');
+  document.getElementById(inputId).focus();
+}
+
+function limpiarError(id, inputId) {
+  document.getElementById(id).classList.remove('show');
+  document.getElementById(inputId).classList.remove('invalid');
+}
+
+// Limpiar errores al interactuar
+document.getElementById('programa').addEventListener('change', () => limpiarError('err-programa', 'programa'));
+document.getElementById('gustos').addEventListener('input',   () => limpiarError('err-gustos',   'gustos'));
+document.getElementById('mejoras').addEventListener('input',  () => limpiarError('err-mejoras',  'mejoras'));
+
+async function enviar() {
+  const programa = document.getElementById('programa').value;
+  const gustos   = document.getElementById('gustos').value.trim();
+  const mejoras  = document.getElementById('mejoras').value.trim();
+  const btn      = document.getElementById('submitBtn');
+
+  let valido = true;
+  if (!programa) { mostrarError('err-programa', 'programa'); valido = false; }
+  if (!gustos)   { mostrarError('err-gustos',   'gustos');   valido = false; }
+  if (!mejoras)  { mostrarError('err-mejoras',  'mejoras');  valido = false; }
+  if (!valido) return;
+
+  btn.disabled    = true;
+  btn.textContent = 'Enviando…';
+
+  try {
+    await fetch(SHEET_URL, {
+      method: 'POST',
+      body: JSON.stringify({ programa, gustos, mejoras }),
+      mode: 'no-cors'
+    });
+    document.getElementById('programa').value = '';
+    document.getElementById('gustos').value   = '';
+    document.getElementById('mejoras').value  = '';
+    document.getElementById('modalOverlay').classList.add('show');
+  } catch {
+    alert('Error de conexión. Verifica tu internet e intenta de nuevo.');
+  }
+
+  btn.disabled    = false;
+  btn.textContent = 'Enviar mi experiencia';
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+</script>
+</body>
+</html>

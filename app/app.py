@@ -695,6 +695,10 @@ def admin_devolver_hoja(inf_id, hoja_key):
 def devocional():
     return render_template('devocional.html')
 
+@app.route('/fsy_2026')
+def fsy_2026():
+    return render_template('fsy_2026.html')
+
 if __name__ == '__main__':
     init_db()
     app.run(host='0.0.0.0', port=5000, debug=False)
